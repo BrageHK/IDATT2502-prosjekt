@@ -71,8 +71,6 @@ class Node():
         while not done:
             try:
                 action = self.random_act(simulated_game)
-                if(action == -1):
-                    print("Error! No legal moves! i simulate()")
             except:
                 print("Error!")
                 print("turn: ", simulated_game.turn, "normal turn", self.env.turn, "action: ", action, "legal moves: ", simulated_game.get_legal_moves())
@@ -97,7 +95,7 @@ class MCTS():
     def __init__(self):
         self.root = Node()
     
-    def get_action(self, board, n_simulations=1_000):
+    def get_action(self, board, n_simulations=6_000):
         #print("input board:", board)
         self.root = Node()
         self.root.env.board = board
