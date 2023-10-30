@@ -2,15 +2,13 @@ import torch
 import torch.nn as nn
 
 """
-Dette er bare et nevralnett som er brukt i DQN, vi må sikkert
-forandre på det ganske mye.
+    Side 11 på: "Improving Monte Carlo Tree Search with Artificial Neural Networks without Heuristics"
 """
-class QNetwork(nn.Module):
-    def __init__(self, object_dim, action_dim, hidden_dim):
-        super(QNetwork, self).__init__()
+class PredictorNerualNet(nn.Module):
+    def __init__(self, object_dim, action_dim=3, hidden_dim=100):
+        super(PredictorNerualNet, self).__init__()
         
         self.lin1 = nn.Linear(object_dim, hidden_dim)
-        self.lin2 = nn.Linear(hidden_dim, hidden_dim)
         self.lin3 = nn.Linear(hidden_dim, action_dim)
         
         self.activation = nn.ReLU()

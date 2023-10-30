@@ -8,7 +8,7 @@ class ConnectFour:
         self.turn = 0
         self.running = True
         self.action_space = 7
-        self.reset()
+        self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
 
     def drop_piece(self, col, piece):
         row = self.get_next_open_row(col)
@@ -58,6 +58,17 @@ class ConnectFour:
     def reset(self):
         self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
         return self.board.flatten()
+    
+    def get_player(self):
+        return -1 if self.turn % 2 == 0 else 1
+    
+    def check_game_over(self, piece, outputBoard): # TODO: refactor outputBoard out of this function
+        if self.winning_move(piece):
+            return (outputBoard, 1, True) # Win
+        if self.turn == 42: 
+            return (outputBoard, 0, True) # Draw
+        else:
+            return (outputBoard, 0, False) # Game goes on
 
     def step(self, action):
         """
@@ -70,10 +81,7 @@ class ConnectFour:
         piece = -1 if self.turn % 2 == 0 else 1
         self.drop_piece(action, piece)
         outputBoard = self.board.flatten()
+
+        return self.check_game_over(piece, outputBoard)
         
-        if self.winning_move(piece):
-            return (outputBoard, 1, True) # Win
-        if self.turn == 42: 
-            return (outputBoard, 0, True) # Draw
-        else:
-            return (outputBoard, 0, False) # Game goes on
+        
