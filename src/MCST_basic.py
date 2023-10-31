@@ -65,12 +65,12 @@ class Node():
             self.parent.backpropagate(reward1, reward2)
 
 class MCTS():
-    def get_action(self, env, n_simulations=10_000, invert=True, verbose=False):
+    def get_action(self, env, n_simulations=100_000, invert=True, verbose=False):
         if invert: # Invert board from player to AI
-            env.board = -env.board 
+            env.board = -env.board
         
         root = Node(env=env)
-            
+        
         for _ in range(n_simulations):
             # Select
             node = root.select()
@@ -82,11 +82,11 @@ class MCTS():
             result, _ = node.simulate()
 
             # Backpropagate with simulation result
-            if result == 1:
+            if result == 1: 
                 node.backpropagate(1, 0)
-            elif result == -1:
+            elif result == -1: 
                 node.backpropagate(0, 1)
-            else:
+            else: 
                 node.backpropagate(0, 0)
                 
         visits = np.array([child.visits for child in root.children])
@@ -95,4 +95,4 @@ class MCTS():
         return root.children[np.argmax(visits)].action
 
 if __name__ == "__main__":
-    mcts = MCTS()
+    mcts = MCTS(verbose=True)
