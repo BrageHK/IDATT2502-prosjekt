@@ -1,6 +1,7 @@
 import pygame
 import torch
 import numpy as np
+import copy
 
 from ConnectFourEnv import ConnectFour
 from MCST_basic import MCTS
@@ -66,9 +67,11 @@ class ConnectFourPyGame:
                             quit()
                             
                         # Ai turn
-                        col = self.opponent.get_action(self.env.board * (-1))
-                        self.env.step(col)
+                        col = self.opponent.get_action(copy.deepcopy(self.env))
+                        board, _, _ = self.env.step(col)
                         self.draw_board()
+                        print(self.env.board)
+                     
                         
                         if self.env.winning_move(self.env.get_player()):
                             self.running = False

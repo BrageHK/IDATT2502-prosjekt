@@ -65,22 +65,9 @@ class Node():
         reward, done = simulated_game.check_game_over(current_player)
         
         while not done:
-            try:
-                action = self.random_act(simulated_game)
-                board, reward, done = simulated_game.step(action)
-            except:
-                print("Error!")
-                """
-                print("turn: ", simulated_game.turn, "Start turn", start_simulation.turn, "action: ", action, "legal moves: ", simulated_game.get_legal_moves())
-                print("Broken board")
-                print(board)
-                print("Start board")
-                print(start_simulation.board) """
-                done = True
-            
-        if(simulated_game.turn == 42):
-            print("Draw")
-            print(simulated_game.board)
+            action = self.random_act(simulated_game)
+            board, reward, done = simulated_game.step(action)
+
         winning_player = simulated_game.get_player()
         return reward * winning_player, simulated_game.board # Return 1 if the player won, -1 if the player lost, and 0 if it was a draw.
     
@@ -96,11 +83,12 @@ class MCTS():
     def __init__(self):
         self.root = Node()
     
-    def get_action(self, board, n_simulations=6_000):
+    def get_action(self, env, n_simulations=6_000):
         #print("input board:", board)
-        self.root = Node()
-        self.root.env.board = board
-        print("Start board when choosing action: ",self.root.env.board)
+        
+        env.board = -env.board
+        self.root = Node(env=env)
+        #print("Start board when choosing action: ",self.root.env.board)
             
         for _ in range(n_simulations):
             # Select node from root
