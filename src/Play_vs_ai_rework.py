@@ -63,6 +63,7 @@ class ConnectFourPyGame:
                         
                         if self.env.winning_move(self.env.get_player()):
                             self.running = False
+                            pygame.time.wait(3000)
                             pygame.quit()
                             quit()
                             
@@ -72,9 +73,9 @@ class ConnectFourPyGame:
                         self.draw_board()
                         print(self.env.board)
                      
-                        
                         if self.env.winning_move(self.env.get_player()):
                             self.running = False
+                            pygame.time.wait(3000)
                             pygame.quit()
                             quit()
 
