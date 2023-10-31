@@ -57,12 +57,20 @@ class Node():
         winning_player = simulated_game.get_player()
         return reward * winning_player, simulated_game.board # Return 1 if the player won, -1 if the player lost, and 0 if it was a draw.
     
-    def backpropagate(self, reward1, reward2):
+    def backpropagate(self, result):
         self.visits += 1
-        self.reward1 += reward1
-        self.reward2 += reward2
+        if result == 1:
+            self.reward1 += 1
+            self.reward2 += 0
+        elif result == -1:
+            self.reward1 += 0
+            self.reward2 += 1
+        else:
+            self.reward1 += 0
+            self.reward2 += 0
+
         if self.parent:
-            self.parent.backpropagate(reward1, reward2)
+            self.parent.backpropagate(result)
 
 class MCTS():
     def get_action(self, env, n_simulations=10_000, invert=True, verbose=False):
@@ -82,12 +90,7 @@ class MCTS():
             result, _ = node.simulate()
 
             # Backpropagate with simulation result
-            if result == 1:
-                node.backpropagate(1, 0)
-            elif result == -1:
-                node.backpropagate(0, 1)
-            else:
-                node.backpropagate(0, 0)
+            node.backpropagate(result)
                 
         visits = np.array([child.visits for child in root.children])
         if verbose:
