@@ -64,7 +64,7 @@ class ConnectFour:
     def check_game_over(self, piece):
         if self.winning_move(piece):
             return (1, True) # Win
-        if self.turn == 41: #TODO: wtf
+        if self.turn == 39: #TO2DO: wtf
             return (0, True) # Draw
         else:
             return (0, False) # Game goes on
@@ -76,8 +76,9 @@ class ConnectFour:
         return: (next_state, reward, done)
         """
         
-        self.drop_piece(action, self.get_player())
         self.turn += 1
+        self.drop_piece(action, self.get_player())
+        
         outputBoard = self.board
         reward, done = self.check_game_over(self.get_player())
         return outputBoard, reward, done

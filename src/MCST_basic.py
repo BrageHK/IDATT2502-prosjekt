@@ -7,15 +7,13 @@ class Node():
         self.children = []
         self.parent = parent
         self.action = action
-        self.env = copy.deepcopy(env)
+        self.env = env
         self.reward1 = 0
         self.reward2 = 0
         self.visits = 0
         
         self.c = 4 # Exploration parameter
         
-        self.hasSimulated = False
-
     # Upper Confidence Bound fra side 10
     # Verdier bør være mellom 0 og 1 når man vinner eller taper.
     def calculate_UCB(self, child):
@@ -31,7 +29,7 @@ class Node():
         if child.visits == 0:
             return float('inf')
         
-        return np.abs(child.reward1 - child.reward2) / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
+        return self.env.get_player() * np.abs(child.reward1 - child.reward2) / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
 
     def select(self):
         if not bool(self.children):
@@ -50,8 +48,7 @@ class Node():
         #print("legal_moves: ", legal_moves)
         for action in legal_moves:
             next_env = copy.deepcopy(self.env)
-            t = next_env.turn
-            _, _, _ = next_env.step(action)
+            board, reward, done = next_env.step(action)
             child = Node(parent=self, env=next_env, action=action)
             self.children.append(child)
             
@@ -60,10 +57,9 @@ class Node():
 
     # Simulate random actions until a terminal state is reached
     def simulate(self):
-        if(self.hasSimulated):
-            print("Error! Each game should only be simulated once!")
-        self.hasSimulated = True
+        
         simulated_game = copy.deepcopy(self.env)
+        start_simulation = copy.deepcopy(simulated_game)
         current_player = simulated_game.get_player() # -1 or 1
         done = False
         reward, done = simulated_game.check_game_over(current_player)
@@ -71,11 +67,16 @@ class Node():
         while not done:
             try:
                 action = self.random_act(simulated_game)
+                board, reward, done = simulated_game.step(action)
             except:
                 print("Error!")
-                print("turn: ", simulated_game.turn, "normal turn", self.env.turn, "action: ", action, "legal moves: ", simulated_game.get_legal_moves())
+                """
+                print("turn: ", simulated_game.turn, "Start turn", start_simulation.turn, "action: ", action, "legal moves: ", simulated_game.get_legal_moves())
+                print("Broken board")
                 print(board)
-            board, reward, done = simulated_game.step(action)
+                print("Start board")
+                print(start_simulation.board) """
+                done = True
             
         if(simulated_game.turn == 42):
             print("Draw")
@@ -99,6 +100,7 @@ class MCTS():
         #print("input board:", board)
         self.root = Node()
         self.root.env.board = board
+        print("Start board when choosing action: ",self.root.env.board)
             
         for _ in range(n_simulations):
             # Select node from root
@@ -124,6 +126,8 @@ class MCTS():
         #print(self.env.board)
         visits = [child.visits for child in self.root.children]
         visits = np.array(visits)
+        ucb_values = [self.root.calculate_UCB(child) for child in self.root.children]
+        print("UCB values:", ucb_values)
         print(visits)
         print(visits / np.sum(visits))
         print("length: ", len(visits))
