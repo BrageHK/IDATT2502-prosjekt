@@ -27,7 +27,7 @@ class Node():
             for child in node.children:
                 UCB_values.append(node.calculate_UCB(child))
             node = node.children[np.argmax(UCB_values)]
-
+        
         return node
 
     # Adds a child node for untried action and returns it

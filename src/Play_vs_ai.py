@@ -80,7 +80,66 @@ class ConnectFourPyGame:
                             quit()
 
 
+class ConnectFourTerminal:
+
+    def __init__(self):
+        self.env = Connect_four()
+        self.running = True
+        self.opponent = MCTS()
+
+    def draw_board(self):
+        RED = "\033[31m"
+        YELLOW = "\033[33m"
+        RESET = "\033[0m"
+        
+        print("\nCurrent Board:")
+        print("-------------")
+        for row in reversed(self.env.board):
+            print("|", end="")
+            for cell in row:
+                symbol = "."
+                color = ""
+                if cell == 1:
+                    symbol = "X"
+                    color = RED
+                elif cell == -1:
+                    symbol = "O"
+                    color = YELLOW
+                print(f"{color}{symbol}{RESET}", end="|")
+            print()
+        print("-------------")
+        print(" 0 1 2 3 4 5 6\n")
+
+    def play_against_ai(self):
+        while self.running:
+            self.draw_board()
+            
+            # Player turn
+            col = int(input("Your turn. Choose a column (0-6): "))
+            if self.env.is_valid_location(col):
+                self.env.step(col)
+                self.draw_board()
+
+                if self.env.winning_move(self.env.get_player()):
+                    print("You win!")
+                    self.running = False
+                    break
+
+                # AI turn
+                print("AI's turn...")
+                col = self.opponent.get_action(copy.deepcopy(self.env))
+                self.env.step(col)
+                self.draw_board()
+                
+                if self.env.winning_move(self.env.get_player()):
+                    print("AI wins!")
+                    self.running = False
+                    break
+
+
 if __name__ == "__main__":
     game = ConnectFourPyGame()
     game.draw_board()
     game.play_against_ai()
+    #game = ConnectFourTerminal()
+    #game.play_against_ai()
