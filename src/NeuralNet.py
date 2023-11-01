@@ -16,7 +16,6 @@ class PredictorNerualNet(nn.Module):
     def forward(self, x):
         x = self.lin1(x)
         x = self.activation(x)
-        x = self.lin2(x)
         x = self.activation(x)
         x = self.lin3(x)
         return x

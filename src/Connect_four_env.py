@@ -6,7 +6,6 @@ class ConnectFour:
         self.ROW_COUNT = 6
         self.COLUMN_COUNT = 7
         self.turn = 0
-        self.running = True
         self.action_space = 7
         self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
 
@@ -30,7 +29,6 @@ class ConnectFour:
         return legal_moves
 
     def winning_move(self, piece):
-        
         # Check horizontal locations for win
         for c in range(self.COLUMN_COUNT - 3):
             for r in range(self.ROW_COUNT):
@@ -57,18 +55,19 @@ class ConnectFour:
 
     def reset(self):
         self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
+        self.turn = 0
         return self.board.flatten()
     
     def get_player(self):
         return -1 if self.turn % 2 == 0 else 1
     
-    def check_game_over(self, piece, outputBoard): # TODO: refactor outputBoard out of this function
+    def check_game_over(self, piece):
         if self.winning_move(piece):
-            return (outputBoard, 1, True) # Win
-        if self.turn == 42: 
-            return (outputBoard, 0, True) # Draw
+            return (1, True) # Win
+        if self.turn == 42: #TO2DO: wtf
+            return (0, True) # Draw
         else:
-            return (outputBoard, 0, False) # Game goes on
+            return (0, False) # Game goes on
 
     def step(self, action):
         """
@@ -78,10 +77,10 @@ class ConnectFour:
         """
         
         self.turn += 1
-        piece = -1 if self.turn % 2 == 0 else 1
-        self.drop_piece(action, piece)
-        outputBoard = self.board.flatten()
-
-        return self.check_game_over(piece, outputBoard)
+        self.drop_piece(action, self.get_player())
+        
+        outputBoard = np.copy(self.board)
+        reward, done = self.check_game_over(self.get_player())
+        return outputBoard, reward, done
         
         
