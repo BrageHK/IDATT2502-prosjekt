@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import copy
 
-from Connect_four_env import Connect_four
+from Connect_four_env import ConnectFour
 from MCST_basic import MCTS
 
 
@@ -24,7 +24,7 @@ class ConnectFourPyGame:
         self.SQUARESIZE = 100
         self.RADIUS = int(self.SQUARESIZE / 2 - 5)
         
-        self.env = Connect_four()
+        self.env = ConnectFour()
         self.running = True
 
         self.opponent = MCTS()
@@ -33,10 +33,22 @@ class ConnectFourPyGame:
         self.font = pygame.font.Font(None, 74)
         
     def draw_board(self):
+        WHITE = (255, 255, 255)  # Define white color
+
         for c in range(self.COLUMN_COUNT):
             for r in range(self.ROW_COUNT):
                 pygame.draw.rect(self.window, self.BLACK, (c * self.SQUARESIZE, r * self.SQUARESIZE + self.SQUARESIZE, self.SQUARESIZE, self.SQUARESIZE))
                 pygame.draw.circle(self.window, self.BLACK, (int(c * self.SQUARESIZE + self.SQUARESIZE / 2), int(r * self.SQUARESIZE + self.SQUARESIZE + self.SQUARESIZE / 2)), self.RADIUS)
+
+        # Draw white vertical lines between cubes
+        for c in range(self.COLUMN_COUNT - 1):
+            for r in range(self.ROW_COUNT):
+                pygame.draw.line(self.window, WHITE, (c * self.SQUARESIZE + self.SQUARESIZE, r * self.SQUARESIZE), (c * self.SQUARESIZE + self.SQUARESIZE, (r+1) * self.SQUARESIZE), 1)
+
+        # Draw white horizontal lines between cubes
+        for r in range(self.ROW_COUNT - 1):
+            for c in range(self.COLUMN_COUNT):
+                pygame.draw.line(self.window, WHITE, (c * self.SQUARESIZE, (r + 1) * self.SQUARESIZE), ((c + 1) * self.SQUARESIZE, (r + 1) * self.SQUARESIZE), 1)
 
         for c in range(self.COLUMN_COUNT):
             for r in range(self.ROW_COUNT):
@@ -45,6 +57,9 @@ class ConnectFourPyGame:
                 elif self.env.board[r][c] == -1:
                     pygame.draw.circle(self.window, self.YELLOW, (int(c * self.SQUARESIZE + self.SQUARESIZE / 2), self.HEIGHT - int(r * self.SQUARESIZE + self.SQUARESIZE / 2)), self.RADIUS)
         pygame.display.update()
+
+
+
         
     def play_against_ai(self):
         while self.running:

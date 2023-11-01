@@ -1,9 +1,9 @@
 import numpy as np
 import copy
-from Connect_four_env import Connect_four
+from Connect_four_env import ConnectFour
 
 class Node():
-    def __init__(self, parent=None, env=Connect_four(), action=None):
+    def __init__(self, parent=None, env=ConnectFour(), action=None):
         self.children = []
         self.parent = parent
         self.action = action
@@ -73,7 +73,7 @@ class Node():
             self.parent.backpropagate(result)
 
 class MCTS():
-    def get_action(self, env, n_simulations=100_000, invert=True, verbose=False):
+    def get_action(self, env, n_simulations=30_000, invert=True, verbose=False):
         if invert: # Invert board from player to AI
             env.board = -env.board
         
