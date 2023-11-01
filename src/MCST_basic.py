@@ -1,9 +1,9 @@
 import numpy as np
 import copy
-from Connect_four_env import Connect_four
+from Connect_four_env import ConnectFour
 
 class Node():
-    def __init__(self, parent=None, env=Connect_four(), action=None):
+    def __init__(self, parent=None, env=ConnectFour(), action=None):
         self.children = []
         self.parent = parent
         self.action = action

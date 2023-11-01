@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import copy
 
-from Connect_four_env import Connect_four
+from Connect_four_env import ConnectFour
 from MCST_basic import MCTS
 
 
@@ -24,7 +24,7 @@ class ConnectFourPyGame:
         self.SQUARESIZE = 100
         self.RADIUS = int(self.SQUARESIZE / 2 - 5)
         
-        self.env = Connect_four()
+        self.env = ConnectFour()
         self.running = True
 
         self.opponent = MCTS()
