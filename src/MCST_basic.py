@@ -65,7 +65,7 @@ class Node():
             self.parent.backpropagate(reward1, reward2)
 
 class MCTS():
-    def get_action(self, env, n_simulations=10_000, invert=True, verbose=False):
+    def get_action(self, env, n_simulations=30_000, invert=True, verbose=False):
         if invert: # Invert board from player to AI
             env.board = -env.board 
         
