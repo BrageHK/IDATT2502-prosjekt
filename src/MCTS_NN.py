@@ -24,7 +24,7 @@ class NodeNN():
             q_value = 1 - ((child.reward / child.visits) + 1) / 2
             
         # UCB
-        ucb = self.c * child.priority * np.sqrt(self.visits) / (1 + child.visits) # TODO: In case of errors try with log inside the square root
+        ucb = self.c * child.priority * np.sqrt(np.log(self.visits)) / (1 + child.visits) # TODO: In case of errors try with log inside the square root
         
         return q_value + ucb
         
@@ -39,18 +39,20 @@ class NodeNN():
         
         return node
     
+    @torch.no_grad()
     def get_neural_network_predictions(self):
         tensor_state = torch.tensor(self.env.get_encoded_state()).unsqueeze(0)
         policy, value = self.nn_model.forward(tensor_state)
-        print("Policy: ", policy)
-        print("Value: ", value)
         
-        policy = torch.softmax(policy, axis = 1).squeeze(0).numpy()
+        policy = torch.softmax(policy, axis = 1).squeeze(0).detach().numpy()
         policy *= self.env.get_legal_moves_bool_array()
         policy /= np.sum(policy)
         
         value = value.item()
         
+        #print("Policy: ", policy)
+        #print("Value: ", value)
+    
         return policy, value
 
     # Adds a child node for untried action and returns it
