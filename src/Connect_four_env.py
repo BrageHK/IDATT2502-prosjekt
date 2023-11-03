@@ -1,4 +1,5 @@
 import numpy as np
+from enum import Enum
 
 class BoardState(Enum):
     PLAYER_1 = 1

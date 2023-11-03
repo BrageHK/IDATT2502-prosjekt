@@ -42,6 +42,8 @@ class NodeNN():
     def get_neural_network_predictions(self):
         tensor_state = torch.tensor(self.env.get_encoded_state()).unsqueeze(0)
         policy, value = self.nn_model.forward(tensor_state)
+        print("Policy: ", policy)
+        print("Value: ", value)
         
         policy = torch.softmax(policy, axis = 1).squeeze(0).numpy()
         policy *= self.env.get_legal_moves_bool_array()
@@ -86,18 +88,18 @@ class NodeNN():
             self.parent.backpropagate(-value) # Minus because next backpropocation is for other player
 
 class MCTSNN():
-    def get_action(self, env, n_simulations=1000, invert=True, verbose=False):
+    def get_action(self, env, n_simulations=1000, invert=True, verbose=False, training_return=False):
         if invert: # Invert board from player to AI
             env.board = -env.board
         
-        root = Node(env=env)
+        root = NodeNN(env=env)
         
         for _ in range(n_simulations):
             # Select
             node = root.select()
             
             # Predicts probabilities for each move and winner probability
-            policy, value = self.get_neural_network_predictions()
+            policy, value = node.get_neural_network_predictions()
             
             # Expand node
             node.expand(policy)
@@ -111,7 +113,9 @@ class MCTSNN():
         visits = np.array([child.visits for child in root.children])
         if verbose:
             print(visits)
+        if training_return:
+            return visits
         return root.children[np.argmax(visits)].action
 
 if __name__ == "__main__":
-    mcts = MCTS(verbose=True)
+    mcts = MCTSNN(verbose=True)

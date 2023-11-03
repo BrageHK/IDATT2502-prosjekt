@@ -2,15 +2,9 @@ import pygame
 import torch
 import numpy as np
 import copy
-from enum import Enum
 
 from Connect_four_env import ConnectFour
-from MCST_basic import MCTS
-
-class BoardState(Enum):
-    PLAYER_1 = 1
-    AVAILABLE = 0
-    OPPONENT = -1
+from MCTS_NN import MCTSNN
     
 class ConnectFourPyGame:
     def __init__(self):
@@ -32,7 +26,7 @@ class ConnectFourPyGame:
         self.env = ConnectFour()
         self.running = True
 
-        self.opponent = MCTS()
+        self.opponent = MCTSNN()
 
         pygame.font.init()
         self.font = pygame.font.Font(None, 74)
@@ -62,11 +56,6 @@ class ConnectFourPyGame:
                 elif self.env.board[r][c] == -1:
                     pygame.draw.circle(self.window, self.YELLOW, (int(c * self.SQUARESIZE + self.SQUARESIZE / 2), self.HEIGHT - int(r * self.SQUARESIZE + self.SQUARESIZE / 2)), self.RADIUS)
         pygame.display.update()
-    
-    def get_encoded_state(self):
-        player_mask = [self.env.board == state.value for state in BoardState]
-        encoded_state = np.stack(player_mask).astype(np.float32)
-        return encoded_state
         
     def play_against_ai(self):
         while self.running:
@@ -106,9 +95,9 @@ class ConnectFourPyGame:
 class ConnectFourTerminal:
 
     def __init__(self):
-        self.env = Connect_four()
+        self.env = ConnectFour()
         self.running = True
-        self.opponent = MCTS()
+        self.opponent = MCTSNN()
 
     def draw_board(self):
         RED = "\033[31m"
