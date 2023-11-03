@@ -33,27 +33,19 @@ class Trainer:
         done = False
         reward = 0
         
-        # state = env.get_encoded_state() # TODO: can be the cause of the bug
-        
         while not done:
-            mcts_prob, action = self.mcts.get_action(env=env, n_simulations=nn_depth, invert=invert, training_return=True)  # assuming your MCTS has an option to return probabilities
-            
-            memory.append((env.get_encoded_state(), mcts_prob, env.get_player()))
+            mcts_prob, action = self.mcts.get_action(env=env, n_simulations=nn_depth, invert=invert, training_return=True)
+            memory.append((env.board, mcts_prob, env.get_player()))
             
             action = np.random.choice(env.get_legal_moves(), p=mcts_prob)
             print("action: ", action)
-            
-            _, reward, done = env.step(action) # TODO: can be the cause of the bug, why is not player involved here? Compare this...
-            # state = env.get_encoded_state()
+            _, reward, done = env.step(action)
             invert = not invert
-            
         
-        # print(state)
-        # if env.get_player() == -1:
-        reward = -reward
+        reward = -reward 
         return_memory = []
         for state, mcts_prob, player in memory:
-            return_memory.append((state, mcts_prob, reward * player))
+            return_memory.append((env.get_encoded_state(state), mcts_prob, reward * player))
         print(return_memory)
         print("Game over! player : " , env.get_player(), " Won!")
         return return_memory

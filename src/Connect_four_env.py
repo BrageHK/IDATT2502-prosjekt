@@ -112,8 +112,11 @@ class ConnectFour:
         reward, done = self.check_game_over(self.get_player())
         return outputBoard, reward, done
     
-    def get_encoded_state(self):
-        player_mask = [self.board == state.value for state in BoardState]
+    def get_encoded_state(self, board=None):
+        if board is None:
+            board = self.board
+
+        player_mask = [board == state.value for state in BoardState]
         encoded_state = np.stack(player_mask).astype(np.float32)
         return encoded_state
         

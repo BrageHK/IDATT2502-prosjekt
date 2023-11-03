@@ -7,54 +7,56 @@ from torch.utils.data import DataLoader, TensorDataset
 from NeuralNet import AlphaPredictorNerualNet
 
 class Trainer:
-    def __init__(self):
-        pass
+    def __init__(self, model=AlphaPredictorNerualNet(4)):
+        self.model = model
+        self.mcts = MCTSNN(model)
 
     def train(self, num_games, nn_depth, epochs):
-        model = AlphaPredictorNerualNet(4)
-        
         memory = []
-        model.eval()
+        self.model.eval()
         for _ in range(num_games):
-            memory += self.play_game(nn_depth, model)
+            memory += self.play_game(nn_depth)
             
-        print(memory)
+        
+        
             
-        model.train() # Sets training mode
+        self.model.train() # Sets training mode
         for epoch in range(epochs):
             
             pass
-        torch.save(model.state_dict(), "model.pt")
+        torch.save(self.model.state_dict(), "model.pt")
             
-    def play_game(self, nn_depth, model):
+    def play_game(self, nn_depth):
         env = ConnectFour()
-        mcts = MCTSNN(model)
-            
         memory = []
-        # Player 1 first makes a move
-        invert = False
+        invert = False # Player 1 first makes a move
         done = False
         reward = 0
         
-        state = env.get_encoded_state()
+        # state = env.get_encoded_state() # TODO: can be the cause of the bug
         
-        while True:
-            mcts_prob, action = mcts.get_action(env=env, n_simulations=nn_depth, invert=invert, training_return=True)  # assuming your MCTS has an option to return probabilities
+        while not done:
+            mcts_prob, action = self.mcts.get_action(env=env, n_simulations=nn_depth, invert=invert, training_return=True)  # assuming your MCTS has an option to return probabilities
+            
+            memory.append((env.get_encoded_state(), mcts_prob, env.get_player()))
+            
             action = np.random.choice(env.get_legal_moves(), p=mcts_prob)
             print("action: ", action)
-            memory.append((state, mcts_prob, env.get_player()))
             
-            state, reward, done = env.step(action)
-            state = env.get_encoded_state()
+            _, reward, done = env.step(action) # TODO: can be the cause of the bug, why is not player involved here? Compare this...
+            # state = env.get_encoded_state()
             invert = not invert
             
-            if done:
-                print("Game over! player : " , env.get_player(), " Won!")
-                reward = -reward * env.get_player()
-                return_memory = []
-                for state, mcts_prob, player in memory:
-                    return_memory.append((state, mcts_prob, reward * player))
-                return return_memory
+        
+        # print(state)
+        # if env.get_player() == -1:
+        reward = -reward
+        return_memory = []
+        for state, mcts_prob, player in memory:
+            return_memory.append((state, mcts_prob, reward * player))
+        print(return_memory)
+        print("Game over! player : " , env.get_player(), " Won!")
+        return return_memory
 
             
 if __name__ == "__main__":
@@ -68,7 +70,6 @@ if __name__ == "__main__":
     # actions = mcts.get_action(env=ConnectFour(), training_return=True)
     # action_prob = actions / np.sum(actions)
     # print(action_prob)
-    
     trainer = Trainer()
     
     trainer.train(1, 1000, 1)
