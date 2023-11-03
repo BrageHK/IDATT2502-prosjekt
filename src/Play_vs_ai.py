@@ -7,7 +7,7 @@ import time
 import curses
 
 from Connect_four_env import ConnectFour
-from MCTS_basic import MCTS
+from MCTS_singel import MCTS
 
 
 class ConnectFourPyGame:
@@ -87,7 +87,6 @@ class ConnectFourPyGame:
                         board, _, _ = self.env.step(col)
                         self.draw_board()
                         print(self.env.board)
-                        print(self.get_encoded_state())
                      
                         if self.env.winning_move(self.env.get_player()):
                             self.running = False
