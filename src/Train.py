@@ -25,9 +25,9 @@ class Trainer:
                 invert = not invert
             
             reward = reward * env.get_player() # 1 for player 1 win, 2 for player 2 win, 0 for draw
-            rewards = [1 if i%2==0 else -1 for i in range(len(game_states))]
-            
-                
+            n = len(game_states)
+            rewards = [reward, -reward] * (n // 2) + [reward] * (n % 2) 
+
             for state, reward, done in range(game_states):
                 games = tuple(game_states, actions, reward)
             
