@@ -1,5 +1,10 @@
 import numpy as np
 
+class BoardState(Enum):
+    PLAYER_1 = 1
+    AVAILABLE = 0
+    OPPONENT = -1
+
 class ConnectFour:
     
     def __init__(self):
@@ -26,6 +31,12 @@ class ConnectFour:
         for col in range(self.COLUMN_COUNT):
             if self.is_valid_location(col):
                 legal_moves.append(col)
+        return legal_moves
+    
+    def get_legal_moves_bool_array(self): # TODO: edit this when you know the code works - can use the method above
+        legal_moves = []
+        for col in range(self.COLUMN_COUNT):
+            legal_moves.append(self.is_valid_location(col))
         return legal_moves
 
     def winning_move(self, piece):
@@ -82,5 +93,10 @@ class ConnectFour:
         outputBoard = np.copy(self.board)
         reward, done = self.check_game_over(self.get_player())
         return outputBoard, reward, done
+    
+    def get_encoded_state(self):
+        player_mask = [self.board == state.value for state in BoardState]
+        encoded_state = np.stack(player_mask).astype(np.float32)
+        return encoded_state
         
         
