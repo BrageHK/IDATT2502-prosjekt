@@ -3,8 +3,11 @@ import torch
 import numpy as np
 import copy
 
-from Connect_four_env import Connect_four
-from MCST_basic import MCTS
+import time 
+import curses
+
+from Connect_four_env import ConnectFour
+from MCTS_basic import MCTS
 
 
 class ConnectFourPyGame:
@@ -27,7 +30,7 @@ class ConnectFourPyGame:
         self.env = ConnectFour()
         self.running = True
 
-        self.opponent = MCTSNN()
+        self.opponent = MCTS()
 
         pygame.font.init()
         self.font = pygame.font.Font(None, 74)
@@ -98,9 +101,9 @@ class ConnectFourTerminal:
     def __init__(self):
         self.env = ConnectFour()
     def __init__(self, stdscr):
-        self.env = Connect_four()
+        self.env = ConnectFour()
         self.running = True
-        self.opponent = MCTSNN()
+        self.opponent = MCTS()
         self.cursor_x = 0
         self.stdscr = stdscr
         curses.curs_set(0)
