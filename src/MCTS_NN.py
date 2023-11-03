@@ -5,14 +5,14 @@ from Connect_four_env import ConnectFour
 from NeuralNet import AlphaPredictorNerualNet
 
 class NodeNN():
-    def __init__(self, priority=0, parent=None, env=ConnectFour(), action=None):
+    def __init__(self, priority=0, parent=None, env=ConnectFour(), action=None, model=AlphaPredictorNerualNet(4)):
         self.children = []
         self.parent = parent
         self.action = action
         self.env = env
         self.reward = 0
         self.visits = 0
-        self.nn_model = AlphaPredictorNerualNet(4)
+        self.nn_model = model
         self.priority = priority
         
         self.c = 4 # Exploration parameter
@@ -62,7 +62,7 @@ class NodeNN():
                 if probability > 0: 
                     next_env = copy.deepcopy(self.env)
                     next_env.step(action)
-                    child = NodeNN(probability, parent=self, env=next_env, action=action)
+                    child = NodeNN(probability, parent=self, env=next_env, action=action, model=self.nn_model)
                     
                     self.children.append(child)
             
@@ -90,11 +90,14 @@ class NodeNN():
             self.parent.backpropagate(-value) # Minus because next backpropocation is for other player
 
 class MCTSNN():
-    def get_action(self, env, n_simulations=1000, invert=True, verbose=False, training_return=False):
+    def __init__(self, model=ConnectFour()):
+        self.model = model
+    
+    def get_action(self, env, n_simulations=100_000, invert=True, verbose=False, training_return=False):
         if invert: # Invert board from player to AI
             env.board = -env.board
         
-        root = NodeNN(env=env)
+        root = NodeNN(env=env, model=self.model)
         
         for _ in range(n_simulations):
             # Select
@@ -113,11 +116,13 @@ class MCTSNN():
             node.backpropagate(value)
                 
         visits = np.array([child.visits for child in root.children])
+        best_action = root.children[np.argmax(visits)].action
+        probabilties = visits / np.sum(visits)
         if verbose:
             print(visits)
         if training_return:
-            return visits
-        return root.children[np.argmax(visits)].action
+            return probabilties, best_action
+        return best_action
 
 if __name__ == "__main__":
     mcts = MCTSNN(verbose=True)
