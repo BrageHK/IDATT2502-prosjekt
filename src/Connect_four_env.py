@@ -116,16 +116,17 @@ class ConnectFour:
             return (0, True) # Draw
         return (0, False) # Game goes on
 
-    def step(self, action):
+    def step(self, action, player=None):
         """
         The agent does an action, and the environment returns the next state, the reward, and whether the game is over.
         The action number corresponds to the column which the piece should be dropped in.
         return: (next_state, reward, done)
         """
         
+        player = player if player is not None else self.get_player()
+        
         self.turn += 1
-        self.drop_piece(action, self.get_player())
-
+        self.drop_piece(action, player)
 
         outputBoard = np.copy(self.board)
         
@@ -133,7 +134,7 @@ class ConnectFour:
             return outputBoard, 0, False  # No one can win before 7 moves
         
         outputBoard = np.copy(self.board)
-        reward, done = self.check_game_over(self.get_player())
+        reward, done = self.check_game_over(player)
         return outputBoard, reward, done
     
     def get_encoded_state(self, board=None):

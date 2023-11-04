@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from NeuralNet import AlphaPredictorNerualNet
+import copy
 
 class Trainer:
     def __init__(self, model=AlphaPredictorNerualNet(4)):
@@ -14,12 +15,12 @@ class Trainer:
     def train(self, num_games, nn_depth, epochs):
         memory = []
         self.model.eval()
+        
+        # Plays num_games against itself and stores the data in memory
         for _ in range(num_games):
             memory += self.play_game(nn_depth)
             
-        
-        
-            
+        # Trains the model on the data in memory
         self.model.train() # Sets training mode
         for epoch in range(epochs):
             
@@ -35,27 +36,30 @@ class Trainer:
         
         # state = env.get_encoded_state() # TODO: can be the cause of the bug
         
+        
         while not done:
-            mcts_prob, action = self.mcts.get_action(env=env, n_simulations=nn_depth, invert=invert, training_return=True)  # assuming your MCTS has an option to return probabilities
-            
-            memory.append((env.board, mcts_prob, env.get_player()))
-            
+
+            mcts_prob, action = self.mcts.get_action(env=env, n_simulations=nn_depth, training_return=True, invert=True)  # assuming your MCTS has an option to return probabilities
+
+            memory.append((copy.deepcopy(env.board), mcts_prob, env.get_player()))
+
+            #TODO: add temperature
             action = np.random.choice(env.get_legal_moves(), p=mcts_prob)
             print("action: ", action)
             
-            _, reward, done = env.step(action) # TODO: can be the cause of the bug, why is not player involved here? Compare this...
+            _, reward, done = env.step(action, player=1) # TODO: can be the cause of the bug, why is not player involved here? Compare this...
             # state = env.get_encoded_state()
-            invert = not invert
-            
-        
+                    
         # print(state)
         # if env.get_player() == -1:
-
+        if env.get_player() == 1:
+            reward *= -1
         return_memory = []
         for state, mcts_prob, player in memory:
             return_memory.append((env.get_encoded_state(state), mcts_prob, reward * player))
-        print(memory)
-        print("Game over! player : " , env.get_player(), " Won!")
+        print(return_memory)
+        print("Game over! player : " , env.get_player(), " Won! on turn: ", env.turn)
+        print("First reward in memory: ", return_memory[0][2])
         return return_memory
 
             

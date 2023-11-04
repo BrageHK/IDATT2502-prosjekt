@@ -75,8 +75,7 @@ class AlphaPredictorNerualNet(nn.Module):
                 policy_logits, value_output = model(batch_x)
                 
                 # Compute loss gradients
-                loss = model.loss(policy_logits, value_output, policy_target, value_target)
-                loss.backward()
+                model.loss(policy_logits, value_output, policy_target, value_target).backward()
                 
                 # Perform optimization by adjusting weights and bias,
                 optimizer.step()  
