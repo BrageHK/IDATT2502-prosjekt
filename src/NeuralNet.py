@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import random
+import numpy as np
 
 class ResBlock(nn.Module):
     def __init__(self, hidden_dim):
@@ -67,7 +69,52 @@ class AlphaPredictorNerualNet(nn.Module):
         value_loss = nn.MSELoss()(value_logits, value_target)
         return policy_loss + value_loss
     
+    def optimize(self, model, memory, epoch=20, learning_rate=0.001, batch_size=64): #
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+        for _ in range(epoch):
+            random.shuffle(memory)
+
+            for batch_index in range(0, len(memory), batch_size):
+                end_index = min(len(memory) - 1, batch_index + batch_size)
+                batch = memory[batch_index:end_index]
+
+                # TODO: rewrite                
+                """
+                state, policy_targets, value_targets = map(torch.tensor, zip(*batch))
+                value_targets = value_targets.view(-1, 1)
+                """
+
+                state, policy_targets, value_targets = zip(*batch)
+                #print("Policy targets")
+                #print(policy_targets)
+                # print("Value targets")
+                # print(value_targets)
+                state = np.array(state)
+                policy_targets = np.array(policy_targets)
+                value_targets = np.array([np.array(item).reshape(-1, 1) for item in value_targets])
+                # for item in value_targets:
+                #     print(np.array(item).shape)
+
+
+                #state, policy_targets, value_targets = np.array(state), np.array(policy_targets), np.array(value_targets).reshape(-1, 1)
+            
+                state = torch.tensor(state, dtype=torch.float32)
+                policy_targets = torch.tensor(policy_targets, dtype=torch.float32)
+                value_targets = torch.tensor(value_targets, dtype=torch.float32)
+
+                policy_output, value_output = model(state)
+                
+                # Compute loss gradients
+                model.loss(policy_output, value_output, policy_targets, value_targets.squeeze(-1)).backward()
+                # Perform optimization by adjusting weights and bias,
+                optimizer.step()
+                # Clear gradients for next step
+                optimizer.zero_grad()
+    
+    """
+    
     def optimize(self, model, train_dataloader, epoch=20, learning_rate=0.001): #
+        # TODO: Shuffle data
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
         for _ in range(epoch):
             for batch_x, batch_y in train_dataloader:
@@ -76,13 +123,12 @@ class AlphaPredictorNerualNet(nn.Module):
                 
                 # Compute loss gradients
                 model.loss(policy_logits, value_output, policy_target, value_target).backward()
-                
                 # Perform optimization by adjusting weights and bias,
-                optimizer.step()  
+                optimizer.step()
                 # Clear gradients for next step
-                optimizer.zero_grad() 
+                optimizer.zero_grad()
 
-                
+       """         
     # Takes in a state and uses the neuron network to get a policy and a value
     def forward(self, x):
         x = self.initial_network(x)

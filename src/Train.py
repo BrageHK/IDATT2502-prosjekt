@@ -12,7 +12,7 @@ class Trainer:
         self.model = model
         self.mcts = MCTSNN(model)
 
-    def train(self, num_games, nn_depth, epochs):
+    def train(self, num_games, nn_depth):
         memory = []
         self.model.eval()
         
@@ -22,9 +22,9 @@ class Trainer:
             
         # Trains the model on the data in memory
         self.model.train() # Sets training mode
-        for epoch in range(epochs):
-            
-            pass
+        
+        self.model.optimize(self.model, memory)
+        
         torch.save(self.model.state_dict(), "model.pt")
             
     def play_game(self, nn_depth):
@@ -43,9 +43,10 @@ class Trainer:
 
             memory.append((copy.deepcopy(env.board), mcts_prob, env.get_player()))
 
+            
             #TODO: add temperature
-            action = np.random.choice(env.get_legal_moves(), p=mcts_prob)
-            print("action: ", action)
+            action = np.random.choice(np.array([0, 1, 2, 3, 4, 5, 6]), p=mcts_prob)
+            # print("action: ", action)
             
             _, reward, done = env.step(action, player=1) # TODO: can be the cause of the bug, why is not player involved here? Compare this...
             # state = env.get_encoded_state()
@@ -57,9 +58,9 @@ class Trainer:
         return_memory = []
         for state, mcts_prob, player in memory:
             return_memory.append((env.get_encoded_state(state), mcts_prob, reward * player))
-        print(return_memory)
-        print("Game over! player : " , env.get_player(), " Won! on turn: ", env.turn)
-        print("First reward in memory: ", return_memory[0][2])
+        # print(return_memory)
+        # print("Game over! player : " , env.get_player(), " Won! on turn: ", env.turn)
+        #print("First reward in memory: ", return_memory[0][2])
         return return_memory
 
             
@@ -76,6 +77,7 @@ if __name__ == "__main__":
     # print(action_prob)
     trainer = Trainer()
     
-    trainer.train(1, 7, 1)
+    
+    trainer.train(num_games=1, nn_depth=7)
     
     

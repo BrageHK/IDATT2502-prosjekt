@@ -49,9 +49,6 @@ class NodeNN():
         policy /= np.sum(policy)
         
         value = value.item()
-        
-        #print("Policy: ", policy)
-        #print("Value: ", value)
     
         return policy, value
 
@@ -65,6 +62,7 @@ class NodeNN():
                     child = NodeNN(probability, parent=self, env=next_env, action=action, model=self.nn_model)
                     
                     self.children.append(child)
+
             
     def random_act(self, env):
         return np.random.choice(env.get_legal_moves())
@@ -114,9 +112,13 @@ class MCTSNN():
 
             # Backpropagate with simulation result
             node.backpropagate(value)
-                
-        visits = np.array([child.visits for child in root.children])
-        best_action = root.children[np.argmax(visits)].action
+        
+        visits = np.zeros(env.COLUMN_COUNT)
+        
+        for child in root.children:
+            visits[child.action] = child.visits
+        
+        best_action = max(root.children, key=lambda child: child.visits, default=None)
         probabilties = visits / np.sum(visits)
         if verbose:
             print(visits)
