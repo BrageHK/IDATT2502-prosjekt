@@ -38,7 +38,7 @@ class Trainer:
         while not done:
             mcts_prob, action = self.mcts.get_action(env=env, n_simulations=nn_depth, invert=invert, training_return=True)  # assuming your MCTS has an option to return probabilities
             
-            memory.append((env.get_encoded_state(), mcts_prob, env.get_player()))
+            memory.append((env.board, mcts_prob, env.get_player()))
             
             action = np.random.choice(env.get_legal_moves(), p=mcts_prob)
             print("action: ", action)
@@ -50,11 +50,11 @@ class Trainer:
         
         # print(state)
         # if env.get_player() == -1:
-        reward = -reward
+
         return_memory = []
         for state, mcts_prob, player in memory:
-            return_memory.append((state, mcts_prob, reward * player))
-        print(return_memory)
+            return_memory.append((env.get_encoded_state(state), mcts_prob, reward * player))
+        print(memory)
         print("Game over! player : " , env.get_player(), " Won!")
         return return_memory
 
@@ -72,6 +72,6 @@ if __name__ == "__main__":
     # print(action_prob)
     trainer = Trainer()
     
-    trainer.train(1, 1000, 1)
+    trainer.train(1, 7, 1)
     
     

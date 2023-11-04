@@ -45,35 +45,59 @@ class ConnectFour:
         return legal_moves
 
     def winning_move(self, piece):
+        # Check horizontal locations for win
+        for c in range(self.COLUMN_COUNT - 3):
+            for r in range(self.ROW_COUNT):
+                if self.board[r][c] == piece and self.board[r][c+1] == piece and self.board[r][c+2] == piece and self.board[r][c+3] == piece:
+                    return True
+
+        # Check vertical locations for win
+        for c in range(self.COLUMN_COUNT):
+            for r in range(self.ROW_COUNT - 3):
+                if self.board[r][c] == piece and self.board[r+1][c] == piece and self.board[r+2][c] == piece and self.board[r+3][c] == piece:
+                    return True
+
+        # Check positively sloped diagonals
+        for c in range(self.COLUMN_COUNT - 3):
+            for r in range(self.ROW_COUNT - 3):
+                if self.board[r][c] == piece and self.board[r+1][c+1] == piece and self.board[r+2][c+2] == piece and self.board[r+3][c+3] == piece:
+                    return True
+
+        # Check negatively sloped diagonals
+        for c in range(self.COLUMN_COUNT - 3):
+            for r in range(3, self.ROW_COUNT):
+                if self.board[r][c] == piece and self.board[r-1][c+1] == piece and self.board[r-2][c+2] == piece and self.board[r-3][c+3] == piece:
+                    return True
+                
         if self.last_row is None or self.last_col is None:
             print("ligma")
             return False
         
-        # directions: (row_increment, col_increment)
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+        # # directions: (row_increment, col_increment)
+        # directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
         
-        for row_inc, col_inc in directions:
-            count = 1  # Start with the last placed piece
+        # for row_inc, col_inc in directions:
+        #     count = 1  # Start with the last placed piece
             
-            # Check both directions from the last placed piece
-            for direction in [-1, 1]:
+        #     # Check both directions from the last placed piece
+        #     for direction in [-1, 1]:
                 
-                for step in range(1, 4):  # Check next 3 cells
-                    temp_row = self.last_row + row_inc * step * direction  # Reset temp_row
-                    temp_col = self.last_col + col_inc * step * direction  # Reset temp_col
+        #         for step in range(1, 4):  # Check next 3 cells
+        #             temp_row = self.last_row + row_inc * step * direction  # Reset temp_row
+        #             temp_col = self.last_col + col_inc * step * direction  # Reset temp_col
                     
-                    # Check boundaries
-                    if 0 <= temp_row < self.ROW_COUNT and 0 <= temp_col < self.COLUMN_COUNT:
-                        if self.board[temp_row][temp_col] == piece:
-                            count += 1
-                            if count == 4:
-                                return True
-                        else:
-                            break  # No need to check further in this direction
-                    else:
-                        break  # Out of bounds
+        #             # Check boundaries
+        #             if 0 <= temp_row < self.ROW_COUNT and 0 <= temp_col < self.COLUMN_COUNT:
+        #                 if self.board[temp_row][temp_col] == piece:
+        #                     count += 1
+        #                     if count == 4:
+        #                         return True
+        #                 else:
+        #                     break  # No need to check further in this direction
+        #             else:
+        #                 break  # Out of bounds
 
-        return False
+        # return False
 
 
 

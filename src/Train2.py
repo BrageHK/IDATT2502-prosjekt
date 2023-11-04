@@ -64,6 +64,6 @@ if __name__ == "__main__":
     # print(action_prob)
     trainer = Trainer()
     
-    trainer.train(1, 1000, 1)
+    trainer.train(1, 7, 1)
     
     
