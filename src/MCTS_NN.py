@@ -44,13 +44,22 @@ class NodeNN():
         tensor_state = torch.tensor(self.env.get_encoded_state()).unsqueeze(0)
         policy, value = self.nn_model.forward(tensor_state)
         
+        #print("Policy before: ", policy)
         policy = torch.softmax(policy, axis = 1).squeeze(0).detach().numpy()
         policy *= self.env.get_legal_moves_bool_array()
         sum = np.sum(policy)
         if sum != 0:
             policy /= sum
+        else:
+            print("What is going on? Policy before: ", policy, " sum: ", sum)
+            policy = np.zeros(self.env.COLUMN_COUNT)
+            policy[np.random.choice(self.env.get_legal_moves())] = 1
+        #print("Policy after: ", policy)
         
         value = value.item()
+        
+        print("Legal moves: ", self.env.get_legal_moves())
+        print("policy", policy)
     
         return policy, value
 
@@ -97,7 +106,7 @@ class MCTSNN():
         except:
             print("Model not found")
     
-    def get_action(self, env, n_simulations=100_000, invert=True, verbose=False, training_return=False):
+    def get_action(self, env, n_simulations=1_000, invert=True, verbose=False, training_return=False):
         if invert: # Invert board from player to AI
             env.board = -env.board
         
@@ -124,7 +133,8 @@ class MCTSNN():
         for child in root.children:
             visits[child.action] = child.visits
         
-        best_action = max(root.children, key=lambda child: child.visits, default=None)
+        best_action = max(root.children, key=lambda child: child.visits, default=None).action
+        print("Best action: ", best_action)
         probabilties = visits / np.sum(visits)
         if verbose:
             print(visits)
