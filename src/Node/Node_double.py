@@ -1,14 +1,16 @@
 import numpy as np
 import copy
 from Connect_four_env import ConnectFour
-
-class Node():
+import copy
+class NodeDouble():
+    
     def __init__(self, parent=None, env=ConnectFour(), action=None):
         self.children = []
         self.parent = parent
         self.action = action
         self.env = env
-        self.reward = 0
+        self.reward1 = 0 # Player 1 reward
+        self.reward2 = 0 # Player 2 reward
         self.visits = 0
         
         self.c = 4 # Exploration parameter
@@ -17,7 +19,7 @@ class Node():
         if child.visits == 0:
             return float('inf')
         
-        return self.env.get_player() * child.reward / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
+        return self.env.get_player() * np.abs(child.reward1 - child.reward2) / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
 
     def select(self):
         node = self
@@ -34,9 +36,9 @@ class Node():
         if self.visits > 0:
             legal_moves = self.env.get_legal_moves()
             for action in legal_moves:
-                next_env = copy.deepcopy(self.env)
+                next_env = self.env.deepcopy()
                 next_env.step(action)
-                child = Node(parent=self, env=next_env, action=action)
+                child = NodeDouble(parent=self, env=next_env, action=action)
                 
                 self.children.append(child)
             
@@ -45,47 +47,28 @@ class Node():
 
     # Simulate random actions until a terminal state is reached
     def simulate(self):
-        simulated_game = copy.deepcopy(self.env)
+        simulated_game = self.env.deepcopy()
         current_player = simulated_game.get_player() # -1 or 1
         reward, done = simulated_game.check_game_over(current_player)
         
         while not done:
             action = self.random_act(simulated_game)
-            _, reward, done = simulated_game.step(action)
+            reward, done = simulated_game.step(action)
 
         winning_player = simulated_game.get_player()
         return reward * winning_player, simulated_game.board # Return 1 if the player won, -1 if the player lost, and 0 if it was a draw.
     
     def backpropagate(self, result):
         self.visits += 1
-        self.reward += result
+        if result == 1:
+            self.reward1 += 1
+            self.reward2 += 0
+        elif result == -1:
+            self.reward1 += 0
+            self.reward2 += 1
+        else:
+            self.reward1 += 0
+            self.reward2 += 0
 
         if self.parent:
             self.parent.backpropagate(result)
-
-class MCTS():
-    def get_action(self, env, n_simulations=10_000, invert=True, verbose=False):
-        if invert: # Invert board from player to AI
-            env.board = -env.board
-            
-        print("env from mcts start ", env.board)
-        
-        root = Node(env=env)
-        
-        for _ in range(n_simulations):
-            # Select
-            node = root.select()
-            
-            # Expand node
-            node.expand()
-            
-            # Simulate root node
-            result, _ = node.simulate()
-
-            # Backpropagate with simulation result
-            node.backpropagate(result)
-                
-        visits = np.array([child.visits for child in root.children])
-        if verbose:
-            print(visits)
-        return root.children[np.argmax(visits)].action

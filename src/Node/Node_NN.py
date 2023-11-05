@@ -1,8 +1,9 @@
 import numpy as np
 import copy
-import torch
 from Connect_four_env import ConnectFour
 from NeuralNet import AlphaPredictorNerualNet
+import torch
+
 
 class NodeNN():
     def __init__(self, priority=0, parent=None, env=ConnectFour(), action=None, model=AlphaPredictorNerualNet(4)):
@@ -68,7 +69,7 @@ class NodeNN():
         if self.visits > 0:
             for action, probability in enumerate(policy):
                 if probability > 0: 
-                    next_env = copy.deepcopy(self.env)
+                    next_env = self.env.deepcopy()
                     next_env.step(action)
                     child = NodeNN(probability, parent=self, env=next_env, action=action, model=self.nn_model)
                     
@@ -77,19 +78,6 @@ class NodeNN():
             
     def random_act(self, env):
         return np.random.choice(env.get_legal_moves())
-
-    # Simulate random actions until a terminal state is reached
-    """ def simulate(self):
-        simulated_game = copy.deepcopy(self.env)
-        current_player = simulated_game.get_player() # -1 or 1
-        reward, done = simulated_game.check_game_over(current_player)
-        
-        while not done:
-            action = self.random_act(simulated_game)
-            _, reward, done = simulated_game.step(action)
-
-        winning_player = simulated_game.get_player()
-        return reward * winning_player, simulated_game.board # Return 1 if the player won, -1 if the player lost, and 0 if it was a draw. """
     
     def backpropagate(self, value):
         self.visits += 1
@@ -97,50 +85,3 @@ class NodeNN():
 
         if self.parent:
             self.parent.backpropagate(-value) # Minus because next backpropocation is for other player
-
-class MCTSNN():
-    def __init__(self, model=AlphaPredictorNerualNet(4), filename="model.pt"):
-        self.model = model
-        try:
-            model.load_state_dict(torch.load(filename))
-        except:
-            print("Model not found")
-    
-    def get_action(self, env, n_simulations=1_000, invert=True, verbose=False, training_return=False):
-        if invert: # Invert board from player to AI
-            env.board = -env.board
-        
-        root = NodeNN(env=env, model=self.model)
-        
-        for _ in range(n_simulations):
-            # Select
-            node = root.select()
-            
-            # Predicts probabilities for each move and winner probability
-            policy, value = node.get_neural_network_predictions()
-            
-            # Expand node
-            node.expand(policy)
-            
-            # Simulate root node
-            # result, _ = node.simulate()
-
-            # Backpropagate with simulation result
-            node.backpropagate(value)
-        
-        visits = np.zeros(env.COLUMN_COUNT)
-        
-        for child in root.children:
-            visits[child.action] = child.visits
-        
-        best_action = max(root.children, key=lambda child: child.visits, default=None).action
-        print("Best action: ", best_action)
-        probabilties = visits / np.sum(visits)
-        if verbose:
-            print(visits)
-        if training_return:
-            return probabilties, best_action
-        return best_action
-
-if __name__ == "__main__":
-    mcts = MCTSNN(verbose=True)

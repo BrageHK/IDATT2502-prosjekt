@@ -1,4 +1,4 @@
-from MCTS_NN import MCTSNN
+from MCTS import MCTS
 from Connect_four_env import ConnectFour
 from collections import deque
 import numpy as np
@@ -10,7 +10,7 @@ import copy
 class Trainer:
     def __init__(self, model=AlphaPredictorNerualNet(4)):
         self.model = model
-        self.mcts = MCTSNN(model)
+        self.mcts = MCTS(model)
     
     def save_model_and_optimizer(self, depth, games):
         torch.save(self.model.state_dict(), f"model-{depth}-depth-and-{games}-games.pt")
@@ -38,33 +38,22 @@ class Trainer:
         done = False
         reward = 0
         
-        # state = env.get_encoded_state() # TODO: can be the cause of the bug
-        
-        
         while not done:
 
             mcts_prob, action = self.mcts.get_action(env=env, n_simulations=nn_depth, training_return=True, invert=True)  # assuming your MCTS has an option to return probabilities
 
-            memory.append((copy.deepcopy(env.board), mcts_prob, env.get_player()))
+            memory.append((env.deepcopy().board, mcts_prob, env.get_player()))
 
-            
             #TODO: add temperature
             action = np.random.choice(np.array([0, 1, 2, 3, 4, 5, 6]), p=mcts_prob)
-            # print("action: ", action)
             
-            _, reward, done = env.step(action, player=1) # TODO: can be the cause of the bug, why is not player involved here? Compare this...
-            # state = env.get_encoded_state()
+            _, reward, done = env.step(action, player=1) # TODO: can be the cause of the bug, why is not player involved here? Compare this..
                     
-        # print(state)
-        # if env.get_player() == -1:
         if env.get_player() == 1:
             reward *= -1
         return_memory = []
         for state, mcts_prob, player in memory:
             return_memory.append((env.get_encoded_state(state), mcts_prob, reward * player))
-        # print(return_memory)
-        # print("Game over! player : " , env.get_player(), " Won! on turn: ", env.turn)
-        #print("First reward in memory: ", return_memory[0][2])
         return return_memory
 
             
