@@ -67,6 +67,8 @@ class MCTS():
     def get_action(self, env, n_simulations=10_000, invert=True, verbose=False):
         if invert: # Invert board from player to AI
             env.board = -env.board
+            
+        print("env from mcts start ", env.board)
         
         root = Node(env=env)
         
@@ -87,6 +89,3 @@ class MCTS():
         if verbose:
             print(visits)
         return root.children[np.argmax(visits)].action
-
-if __name__ == "__main__":
-    mcts = MCTS(verbose=True)

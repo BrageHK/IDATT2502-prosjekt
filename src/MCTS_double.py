@@ -96,6 +96,3 @@ class MCTS():
         if verbose:
             print(visits)
         return root.children[np.argmax(visits)].action
-
-if __name__ == "__main__":
-    mcts = MCTS(verbose=True)

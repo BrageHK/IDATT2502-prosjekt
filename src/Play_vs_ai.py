@@ -8,6 +8,7 @@ import curses
 
 from Connect_four_env import ConnectFour
 from MCTS_singel import MCTS
+from MCTS_NN import MCTSNN
 
 
 class ConnectFourPyGame:
@@ -102,7 +103,7 @@ class ConnectFourTerminal:
     def __init__(self, stdscr):
         self.env = ConnectFour()
         self.running = True
-        self.opponent = MCTS()
+        self.opponent = MCTSNN()
         self.cursor_x = 0
         self.stdscr = stdscr
         curses.curs_set(0)
@@ -170,7 +171,9 @@ class ConnectFourTerminal:
 
     def ai_turn(self):
         self.draw_board("Waiting for AI...")
-        col = self.opponent.get_action(copy.deepcopy(self.env), invert=self.player_starts)
+        
+        col = self.opponent.get_action(copy.deepcopy(self.env), invert=self.player_starts, n_simulations=1000)
+        
         self.env.step(col)
         if self.check_win("AI wins!"):
             return

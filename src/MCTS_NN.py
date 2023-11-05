@@ -46,7 +46,9 @@ class NodeNN():
         
         policy = torch.softmax(policy, axis = 1).squeeze(0).detach().numpy()
         policy *= self.env.get_legal_moves_bool_array()
-        policy /= np.sum(policy)
+        sum = np.sum(policy)
+        if sum != 0:
+            policy /= sum
         
         value = value.item()
     
@@ -88,8 +90,12 @@ class NodeNN():
             self.parent.backpropagate(-value) # Minus because next backpropocation is for other player
 
 class MCTSNN():
-    def __init__(self, model=ConnectFour()):
+    def __init__(self, model=AlphaPredictorNerualNet(4), filename="model.pt"):
         self.model = model
+        try:
+            model.load_state_dict(torch.load(filename))
+        except:
+            print("Model not found")
     
     def get_action(self, env, n_simulations=100_000, invert=True, verbose=False, training_return=False):
         if invert: # Invert board from player to AI

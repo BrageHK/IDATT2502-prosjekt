@@ -11,6 +11,10 @@ class Trainer:
     def __init__(self, model=AlphaPredictorNerualNet(4)):
         self.model = model
         self.mcts = MCTSNN(model)
+    
+    def save_model_and_optimizer(self, depth, games):
+        torch.save(self.model.state_dict(), f"model-{depth}-depth-and-{games}-games.pt")
+        torch.save(self.model.optimizer.state_dict(), f"optimizer-{depth}-depth-and-{games}-games.pt")
 
     def train(self, num_games, nn_depth):
         memory = []
@@ -76,8 +80,19 @@ if __name__ == "__main__":
     # action_prob = actions / np.sum(actions)
     # print(action_prob)
     trainer = Trainer()
+
+    training_iterations = 0
+    games = 10
+    depth = 5_000
     
+    while True:
+        print("Training iteration: ", training_iterations)
+        try:
+            trainer.train(num_games=games, nn_depth=depth)
+        except KeyboardInterrupt:
+            trainer.save_model_and_optimizer(depth=depth, games=games)
+            break
+        training_iterations += 1
     
-    trainer.train(num_games=1, nn_depth=7)
     
     
