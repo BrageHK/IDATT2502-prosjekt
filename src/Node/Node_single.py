@@ -2,7 +2,7 @@ import copy
 import numpy as np
 from Connect_four_env import ConnectFour
 
-class NodeSingel():
+class NodeSingle():
     def __init__(self, parent=None, env=ConnectFour(), action=None):
         self.children = []
         self.parent = parent
@@ -36,7 +36,7 @@ class NodeSingel():
             for action in legal_moves:
                 next_env = self.env.deepcopy()
                 next_env.step(action)
-                child = NodeSingel(parent=self, env=next_env, action=action)
+                child = NodeSingle(parent=self, env=next_env, action=action)
                 
                 self.children.append(child)
             

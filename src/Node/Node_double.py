@@ -1,7 +1,7 @@
 import numpy as np
-import copy
 from Connect_four_env import ConnectFour
-import copy
+
+
 class NodeDouble():
     
     def __init__(self, parent=None, env=ConnectFour(), action=None):
@@ -69,12 +69,17 @@ class NodeDouble():
             reward, done = simulated_game.step(action)
 
         winning_player = simulated_game.get_last_player() # last player becuase the last player won
+        
+        # print("Board:\n")
+        # print(simulated_game.board)
+        # if simulated_game.is_inverted:
+        #     print("\n",-simulated_game.board)
+            
+        
         return reward * winning_player, simulated_game.board # Return 1 if the player won, -1 if the player lost, and 0 if it was a draw.
     
     def backpropagate(self, result):
         self.visits += 1
-        if self.env.is_inverted:
-            result = -result
         if result == 1:
             self.reward1 += 1
         elif result == -1:

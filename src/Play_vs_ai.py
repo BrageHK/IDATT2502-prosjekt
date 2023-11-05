@@ -30,7 +30,7 @@ class ConnectFourPyGame:
         self.env = ConnectFour()
         self.running = True
 
-        self.opponent = MCTS(NODE_TYPE=NodeType.NODE_SINGEL, num_simualtions=1000)
+        self.opponent = MCTS(NODE_TYPE=NodeType.NODE_SINGLE, num_simualtions=1000)
 
         pygame.font.init()
         self.font = pygame.font.Font(None, 74)

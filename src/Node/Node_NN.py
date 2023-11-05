@@ -19,7 +19,7 @@ class NodeNN():
         self.c = 4 # Exploration parameter
         
     def calculate_PUCT(self, child): # TODO: use alfazeros ucb method
-        # Q-value
+        # Quality-value
         q_value = 0
         if child.visits != 0:
             q_value = 1 - ((child.reward / child.visits) + 1) / 2
