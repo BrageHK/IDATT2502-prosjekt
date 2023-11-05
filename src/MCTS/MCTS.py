@@ -48,8 +48,8 @@ class MCTS():
     
     def get_action(self, env, training=False):
         env = env.deepcopy()
-        
         # Invert board if player is -1
+        #print("turn: ", env.turn)
         env.invert_board_for_second_player()
     
         root = self.create_node(env=env)
@@ -65,10 +65,12 @@ class MCTS():
 
             
         # If player was -1 invert board back
-        env.invert_board_for_second_player()
+        env.reset_invert()
                
+        #visits = np.array([child.visits for child in root.children])
+        #print("Visits: ", visits)
         best_action = max(root.children, key=lambda child: child.visits, default=None).action
-        
+
         if training:
             visits = np.zeros(env.COLUMN_COUNT)
             for child in root.children:

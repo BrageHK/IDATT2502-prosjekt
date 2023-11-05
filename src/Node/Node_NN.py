@@ -75,12 +75,12 @@ class NodeNN():
                     
                     self.children.append(child)
 
-            
     def random_act(self, env):
         return np.random.choice(env.get_legal_moves())
     
     def backpropagate(self, value):
         self.visits += 1
+        # TODO: invert here???
         self.reward += value
 
         if self.parent:

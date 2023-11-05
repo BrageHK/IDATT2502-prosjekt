@@ -58,6 +58,8 @@ class NodeSingel():
     
     def backpropagate(self, result):
         self.visits += 1
+        if self.env.is_inverted:
+            self.reward -= result
         self.reward += result
 
         if self.parent:

@@ -15,8 +15,7 @@ class ConnectFour:
         self.turn = 1
         self.action_space = 7
         self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
-        self.last_col = None  
-        self.last_row = None  
+        self.is_inverted = False
     
     def deepcopy(self):
         return copy.deepcopy(self)
@@ -109,6 +108,8 @@ class ConnectFour:
         return self.board.flatten()
     
     def get_player(self):
+        if self.is_inverted:
+            return 1 if self.turn % 2 == 0 else -1
         return -1 if self.turn % 2 == 0 else 1
     
     def get_last_player(self):
@@ -150,6 +151,11 @@ class ConnectFour:
         return encoded_state
         
     def invert_board_for_second_player(self):
-        if self.get_player() == -1:
+        if self.get_player() == -1 and not self.is_inverted:
+            self.is_inverted = True
             self.board = -self.board
-        
+    
+    def reset_invert(self):
+        if self.is_inverted:
+            self.is_inverted = False
+            self.board = -self.board

@@ -21,15 +21,28 @@ class NodeDouble():
         
         return self.env.get_player() * np.abs(child.reward1 - child.reward2) / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
 
+    # def select(self):
+    #     node = self
+    #     while bool(node.children): 
+    #         UCB_values = []
+    #         for child in node.children:
+    #             UCB_values.append(node.calculate_UCB(child))
+    #         node = node.children[np.argmax(UCB_values)]
+    
+    #     return node
+    
     def select(self):
         node = self
-        while bool(node.children): 
-            UCB_values = []
+        best_child = self
+        while bool(node.children):
+            max_UCB = float('-inf')
             for child in node.children:
-                UCB_values.append(node.calculate_UCB(child))
-            node = node.children[np.argmax(UCB_values)]
-        
-        return node
+                UCB_value = node.calculate_UCB(child)
+                if UCB_value > max_UCB:
+                    max_UCB = UCB_value
+                    best_child = child
+            node = best_child
+        return best_child
 
     # Adds a child node for untried action and returns it
     def expand(self):
@@ -48,27 +61,24 @@ class NodeDouble():
     # Simulate random actions until a terminal state is reached
     def simulate(self):
         simulated_game = self.env.deepcopy()
-        current_player = simulated_game.get_player() # -1 or 1
+        current_player = simulated_game.get_last_player() # last player because step is called in expand
         reward, done = simulated_game.check_game_over(current_player)
-        
+            
         while not done:
             action = self.random_act(simulated_game)
             reward, done = simulated_game.step(action)
 
-        winning_player = simulated_game.get_player()
+        winning_player = simulated_game.get_last_player() # last player becuase the last player won
         return reward * winning_player, simulated_game.board # Return 1 if the player won, -1 if the player lost, and 0 if it was a draw.
     
     def backpropagate(self, result):
         self.visits += 1
+        if self.env.is_inverted:
+            result = -result
         if result == 1:
             self.reward1 += 1
-            self.reward2 += 0
         elif result == -1:
-            self.reward1 += 0
             self.reward2 += 1
-        else:
-            self.reward1 += 0
-            self.reward2 += 0
-
+        
         if self.parent:
             self.parent.backpropagate(result)

@@ -58,12 +58,12 @@ def play_game(mcts1, mcts2, match_id, name1, name2):
             mcts, player_name = players[current_player]
             #print(f"player {player_name}'s turn ")
             start_time = time.time()
-            action = mcts.get_action()
+            action = mcts.get_action(env)
             time_stats[player_name] += time.time() - start_time
             actions_stats[player_name] += 1
             #print(f"Player {player_name} chose action {action}")
             reward, done = env.step(action)
-            print_board(env.board)
+            #print_board(env.board)
             current_player = -current_player
         winner = winner = -current_player if reward == 1 else (0 if env.turn == 42 else current_player)
     except Exception as e:
@@ -71,11 +71,7 @@ def play_game(mcts1, mcts2, match_id, name1, name2):
     
     logging.info(f'Match {match_id} finished. player {winner} won  Winner: {players[winner][1] if winner else "Draw"}')
     
-
     return winner, time_stats, actions_stats, match_id, name1, name2
-
-
-
 
 
 def benchmark_mcts(mcts_versions, num_games=20):
@@ -91,6 +87,7 @@ def benchmark_mcts(mcts_versions, num_games=20):
                     args_list.append(args)
                     match_id += 1
 
+    #with Pool(1) as pool:
     with Pool(cpu_count()) as pool:
         results_list = pool.starmap(play_game, args_list)
 
@@ -164,13 +161,13 @@ if __name__ == "__main__":
     #"1": MCTS(n_simulations=50000), # "genious
     #"Basic MCTS": MCTS(n_simulations=20_000),
     #"dumbass": MCTS(n_simulations=10_000),
-    "smart" :MCTS(n_simulations=20000,),
+    "smart" :MCTS(num_simulations=5000,),
     #"dumb" :MCTS(n_simulations=10),
     "random" :Randomf()
     # Add other versions here
     }
 
-    results = benchmark_mcts(mcts_versions, num_games=2)
+    results = benchmark_mcts(mcts_versions, num_games=100)
     
     # Prepare data for writing to JSON
     data_to_write = {
