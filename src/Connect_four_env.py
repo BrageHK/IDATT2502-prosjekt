@@ -36,13 +36,6 @@ class ConnectFour:
         for r in range(self.ROW_COUNT):
             if self.board[r][col] == 0:
                 return r
-            
-    def get_legal_moves(self):
-        legal_moves = []
-        for col in range(self.COLUMN_COUNT):
-            if self.is_valid_location(col):
-                legal_moves.append(col)
-        return legal_moves
     
     def get_legal_moves_bool_array(self):
         legal_moves = []

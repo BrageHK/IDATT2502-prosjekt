@@ -11,7 +11,7 @@ class Node:
         self.action_taken = action_taken
         
         self.children = []
-        self.expandable_moves = game.get_valid_moves(state)
+        self.expandable_moves = game.get_legal_moves_bool_array(state)
         
         self.visit_count = 0
         self.value_sum = 0
@@ -58,7 +58,7 @@ class Node:
         rollout_state = self.state.copy()
         rollout_player = 1
         while True:
-            valid_moves = self.game.get_valid_moves(rollout_state)
+            valid_moves = self.game.get_legal_moves_bool_array(rollout_state)
             action = np.random.choice(np.where(valid_moves == 1)[0])
             rollout_state, reward, done = self.game.step(rollout_state, action, rollout_player)
             value, is_terminal = self.game.check_game_over(rollout_state, action)

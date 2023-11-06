@@ -1,5 +1,11 @@
 import numpy as np
 from MCTS import MCTS
+from enum import Enum
+
+class BoardState(Enum):
+    PLAYER_1 = 1
+    AVAILABLE = 0
+    OPPONENT = -1
 
 class ConnectFour:
     def __init__(self):
@@ -10,52 +16,31 @@ class ConnectFour:
         #self.last_row = None
         #self.last_col = None
         
-    def get_initial_state(self):
+    def get_initial_state(self): # TODO: remove - it is no point whith this, can create a new environment
         return np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
-    
-    def get_next_open_row(self, state, col):
-        for row in range(self.ROW_COUNT):
-            if state[row][col] == 0:
-                return row
     
     def drop_piece(self, state, col, player):
         row = self.get_next_open_row(state, col)
         state[row][col] = player
         #self.last_row = row  # Add this line
         #self.last_col = col  # Add this line
-        
-    def check_state_format(self, state):
-        return state.size == self.ROW_COUNT * self.COLUMN_COUNT
-    
-    def check_game_over(self, state, action):
-        if self.check_win(state, action):
-            return (1, True) # Win
-        if np.sum(self.get_valid_moves(state)) == 0:
-            return (0, True) # Draw
-        return (0, False) # Game goes on
-    
-    def step(self, state, action, player):
-        """
-        The agent does an action, and the environment returns the next state, the reward, and whether the game is over.
-        The action number corresponds to the column which the piece should be dropped in.
-        return: (state, reward, done)
-        """
-        
-        self.drop_piece(state, action, player)
-
-        reward, done = self.check_game_over(state, action)
-        
-        return state, reward, done
-    
-    # def get_next_state(self, state, action, player):
-    #     row = np.max(np.where(state[:, action] == 0))
-    #     state[row, action] = player
-    #     return state
-    
+      
     def is_valid_location(self, col, state):
         return state[self.ROW_COUNT - 1][col] == 0
     
-    def get_valid_moves(self, state):
+    def get_next_open_row(self, state, col):
+        for row in range(self.ROW_COUNT):
+            if state[row][col] == 0:
+                return row
+    
+    def get_legal_moves(self):
+        legal_moves = []
+        for col in range(self.COLUMN_COUNT):
+            if self.is_valid_location(col):
+                legal_moves.append(col)
+        return legal_moves
+    
+    def get_legal_moves_bool_array(self, state):
         legal_moves = []
         for col in range(self.COLUMN_COUNT):
             if self.is_valid_location(col, state):
@@ -63,8 +48,8 @@ class ConnectFour:
             else:
                 legal_moves.append(0)
         return np.array(legal_moves)
-    
-    def check_win(self, state, action):
+
+    def check_win(self, state, action): # TODO: rewrite to be understandable
         if action == None:
             return False
         
@@ -93,6 +78,10 @@ class ConnectFour:
             or (count(1, -1) + count(-1, 1)) >= self.in_a_row - 1 # top right diagonal
         )
     
+    def check_state_format(self, state):
+        return state.size == self.ROW_COUNT * self.COLUMN_COUNT
+    
+    # TODO: rewrite code to automatic return opponent player and opponent value?
     def get_opponent(self, player):
         return -player
     
@@ -102,11 +91,35 @@ class ConnectFour:
     def change_perspective(self, state, player):
         return state * player
     
-    def get_encoded_state(self, state): # TODO: edit
-        encoded_state = np.stack(
-            (state == -1, state == 0, state == 1)
-        ).astype(np.float32)
+    def check_game_over(self, state, action):
+        if self.check_win(state, action):
+            return (1, True) # Win
+        if np.sum(self.get_legal_moves_bool_array(state)) == 0:
+            return (0, True) # Draw
+        return (0, False) # Game goes on
+    
+    
+    def step(self, state, action, player):
+        """
+        The agent does an action, and the environment returns the next state, the reward, and whether the game is over.
+        The action number corresponds to the column which the piece should be dropped in.
+        return: (state, reward, done)
+        """
         
+        self.drop_piece(state, action, player)
+
+        reward, done = self.check_game_over(state, action)
+        
+        return state, reward, done
+    
+    # def get_next_state(self, state, action, player):
+    #     row = np.max(np.where(state[:, action] == 0))
+    #     state[row, action] = player
+    #     return state
+    
+    def get_encoded_state(self, state):
+        player_mask = [state == board_state.value for board_state in BoardState]
+        encoded_state = np.stack(player_mask).astype(np.float32)
         return encoded_state
     
     def print_board(self, board): # TODO: should be in benchmark
@@ -125,7 +138,7 @@ class ConnectFour:
     
 if __name__ == "__main__":
     game = ConnectFour()
-    player = 1
+    player = -1
     mcts = MCTS(game, num_iterations=10_000)
     
     state = game.get_initial_state()
@@ -135,7 +148,7 @@ if __name__ == "__main__":
         game.print_board(state)
         
         if player == 1:
-            valid_moves = game.get_valid_moves(state)
+            valid_moves = game.get_legal_moves_bool_array(state)
             print("valid_moves", [i for i in range(game.action_space) if valid_moves[i] == 1])
             action = int(input(f"{player}:"))
 
