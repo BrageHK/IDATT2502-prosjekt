@@ -1,7 +1,6 @@
 import numpy as np
+from MCTS.MCTS import MCTS
 from enum import Enum
-import copy
-from MCTS import MCTS
 
 class BoardState(Enum):
     PLAYER_1 = 1
@@ -9,148 +8,156 @@ class BoardState(Enum):
     OPPONENT = -1
 
 class ConnectFour:
-    
     def __init__(self):
         self.ROW_COUNT = 6
         self.COLUMN_COUNT = 7
-        self.turn = 1 # TODO: ERROR?
-        self.action_space = 7
-        self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT)) # TODO: ERROR?
-        self.is_inverted = False
-        self.last_row = None
-        self.last_col = None
+        self.action_space = self.COLUMN_COUNT
+        self.in_a_row = 4
+        #self.last_row = None
+        #self.last_col = None
+        
+    def get_initial_state(self): # TODO: remove - it is no point whith this, can create a new environment
+        return np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
     
-    def deepcopy(self):
-        return copy.deepcopy(self)
-
-    def drop_piece(self, col, piece):
-        row = self.get_next_open_row(col)
-        self.board[row][col] = piece
-        self.last_row = row  # Add this line
-        self.last_col = col  # Add this line
-
-    def is_valid_location(self, col):
-        return self.board[self.ROW_COUNT - 1][col] == 0
-
-    def get_next_open_row(self, col):
-        for r in range(self.ROW_COUNT):
-            if self.board[r][col] == 0:
-                return r
+    def drop_piece(self, state, col, player):
+        row = self.get_next_open_row(state, col)
+        state[row][col] = player
+        #self.last_row = row  # Add this line
+        #self.last_col = col  # Add this line
+      
+    def is_valid_location(self, col, state):
+        return state[self.ROW_COUNT - 1][col] == 0
     
-    def get_legal_moves_bool_array(self):
+    def get_next_open_row(self, state, col):
+        for row in range(self.ROW_COUNT):
+            if state[row][col] == 0:
+                return row
+    
+    def get_legal_moves(self, state):
         legal_moves = []
         for col in range(self.COLUMN_COUNT):
-            legal_moves.append(self.is_valid_location(col))
+            if self.is_valid_location(col, state):
+                legal_moves.append(col)
         return legal_moves
+    
+    def get_legal_moves_bool_array(self, state):
+        legal_moves = []
+        for col in range(self.COLUMN_COUNT):
+            if self.is_valid_location(col, state):
+                legal_moves.append(1)
+            else:
+                legal_moves.append(0)
+        return np.array(legal_moves)
 
-    def winning_move(self, piece):
-        # # Check horizontal locations for win
-        # for c in range(self.COLUMN_COUNT - 3):
-        #     for r in range(self.ROW_COUNT):
-        #         if self.board[r][c] == piece and self.board[r][c+1] == piece and self.board[r][c+2] == piece and self.board[r][c+3] == piece:
-        #             return True
-
-        # # Check vertical locations for win
-        # for c in range(self.COLUMN_COUNT):
-        #     for r in range(self.ROW_COUNT - 3):
-        #         if self.board[r][c] == piece and self.board[r+1][c] == piece and self.board[r+2][c] == piece and self.board[r+3][c] == piece:
-        #             return True
-
-        # # Check positively sloped diagonals
-        # for c in range(self.COLUMN_COUNT - 3):
-        #     for r in range(self.ROW_COUNT - 3):
-        #         if self.board[r][c] == piece and self.board[r+1][c+1] == piece and self.board[r+2][c+2] == piece and self.board[r+3][c+3] == piece:
-        #             return True
-
-        # # Check negatively sloped diagonals
-        # for c in range(self.COLUMN_COUNT - 3):
-        #     for r in range(3, self.ROW_COUNT):
-        #         if self.board[r][c] == piece and self.board[r-1][c+1] == piece and self.board[r-2][c+2] == piece and self.board[r-3][c+3] == piece:
-        #             return True
-                
-        if self.last_row is None or self.last_col is None:
+    def check_win(self, state, action): # TODO: rewrite to be understandable
+        if action == None:
             return False
         
-        # directions: (row_increment, col_increment)
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
-        
-        for row_inc, col_inc in directions:
-            count = 1  # Start with the last placed piece
-            
-            # Check both directions from the last placed piece
-            for direction in [-1, 1]:
-                
-                for step in range(1, 4):  # Check next 3 cells
-                    temp_row = self.last_row + row_inc * step * direction  # Reset temp_row
-                    temp_col = self.last_col + col_inc * step * direction  # Reset temp_col
-                    
-                    # Check boundaries
-                    if 0 <= temp_row < self.ROW_COUNT and 0 <= temp_col < self.COLUMN_COUNT:
-                        if self.board[temp_row][temp_col] == piece:
-                            count += 1
-                            if count == 4:
-                                return True
-                        else:
-                            break  # No need to check further in this direction
-                    else:
-                        break  # Out of bounds
+        row = np.min(np.where(state[:, action] != 0))
+        column = action
+        player = state[row][column]
 
-        return False
+        def count(offset_row, offset_column):
+            for i in range(1, self.in_a_row):
+                r = row + offset_row * i
+                c = action + offset_column * i
+                if (
+                    r < 0 
+                    or r >= self.ROW_COUNT
+                    or c < 0 
+                    or c >= self.COLUMN_COUNT
+                    or state[r][c] != player
+                ):
+                    return i - 1
+            return self.in_a_row - 1
 
-    def reset(self):
-        self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
-        self.turn = 1
-        return self.board.flatten()
+        return (
+            count(1, 0) >= self.in_a_row - 1 # vertical
+            or (count(0, 1) + count(0, -1)) >= self.in_a_row - 1 # horizontal
+            or (count(1, 1) + count(-1, -1)) >= self.in_a_row - 1 # top left diagonal
+            or (count(1, -1) + count(-1, 1)) >= self.in_a_row - 1 # top right diagonal
+        )
     
-    def get_player(self):
-        if self.is_inverted:
-            return 1 if self.turn % 2 == 0 else -1
-        return -1 if self.turn % 2 == 0 else 1
+    def check_state_format(self, state):
+        return state.size == self.ROW_COUNT * self.COLUMN_COUNT
     
-    def get_last_player(self):
-        return -self.get_player()
+    # TODO: rewrite code to automatic return opponent player and opponent value?
+    def get_opponent(self, player):
+        return -player
     
-    def check_game_over(self, piece):
-        if self.winning_move(piece):
+    def get_opponent_value(self, value):
+        return -value
+
+    def change_perspective(self, state, player):
+        return state * player
+    
+    def check_game_over(self, state, action):
+        if self.check_win(state, action):
             return (1, True) # Win
-        if self.turn == 42:
+        if np.sum(self.get_legal_moves_bool_array(state)) == 0:
             return (0, True) # Draw
         return (0, False) # Game goes on
-
-    def step(self, action):
+    
+    
+    def step(self, state, action, player):
         """
         The agent does an action, and the environment returns the next state, the reward, and whether the game is over.
         The action number corresponds to the column which the piece should be dropped in.
-        return: (reward, done)
+        return: (state, reward, done)
         """
         
-        player = self.get_player()
-        
-        self.drop_piece(action, player)
-        
-        if self.turn < 7:
-            self.turn += 1
-            return 0, False  # No one can win before 7 moves
+        self.drop_piece(state, action, player)
 
-        reward, done = self.check_game_over(player)
-        self.turn += 1
+        reward, done = self.check_game_over(state, action)
         
-        return reward, done
+        return state, reward, done
     
-    def get_encoded_state(self, board=None):
-        if board is None:
-            board = self.board
-
-        player_mask = [board == state.value for state in BoardState]
+    # def get_next_state(self, state, action, player):
+    #     row = np.max(np.where(state[:, action] == 0))
+    #     state[row, action] = player
+    #     return state
+    
+    def get_encoded_state(self, state):
+        player_mask = [state == board_state.value for board_state in BoardState]
         encoded_state = np.stack(player_mask).astype(np.float32)
         return encoded_state
-        
-    def invert_board_for_second_player(self):
-        if self.get_player() == -1 and not self.is_inverted:
-            self.is_inverted = True
-            self.board = -self.board
+
     
-    def reset_invert(self):
-        if self.is_inverted:
-            self.is_inverted = False
-            self.board = -self.board
+if __name__ == "__main__":
+    env = ConnectFour()
+    player = -1
+    mcts = MCTS(env, num_iterations=10_000)
+    
+    state = env.get_initial_state()
+
+
+    while True:
+        env.print_board(state)
+        
+        if player == 1:
+            valid_moves = env.get_legal_moves_bool_array(state)
+            print("valid_moves", [i for i in range(env.action_space) if valid_moves[i] == 1])
+            action = int(input(f"{player}:"))
+
+            if valid_moves[action] == 0:
+                print("action not valid")
+                continue
+                
+        else:
+            neutral_state = env.change_perspective(state, player)
+            action = mcts.search(neutral_state)
+            #action = np.argmax(mcts_probs)
+            
+        state, reward, done = env.step(state, action, player)
+        
+        value, is_terminal = env.check_game_over(state, action)
+        
+        if is_terminal:
+            env.print_board(state)
+            if value == 1:
+                print(player, "won")
+            else:
+                print("draw")
+            break
+            
+        player = env.get_opponent(player)

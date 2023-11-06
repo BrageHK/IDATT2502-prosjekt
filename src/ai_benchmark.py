@@ -2,7 +2,7 @@ import time
 import logging
 from Connect_four_env import ConnectFour
 from MCTS.MCTS import MCTS
-from Node.NodeType import NodeType
+#from Node.NodeType import NodeType
 import json
 import numpy as np
 import random
@@ -42,9 +42,9 @@ def notify_benchmark_finished():
         logging.error(f"Failed to send notification: {e}")
 
 
-def play_game(mcts1, mcts2, match_id, name1, name2):
+def play_game(env, mcts1, mcts2, match_id, name1, name2):
     logging.info(f'Starting match {match_id} between {name1} and {name2}')
-    env = ConnectFour()
+    state = env.get_initial_state()
     time_stats = {name1: 0, name2: 0}
     actions_stats = {name1: 0, name2: 0}
     players = {1: (mcts1, name1),
@@ -53,28 +53,42 @@ def play_game(mcts1, mcts2, match_id, name1, name2):
     done = False
     reward = None
     current_player = 1
-    # try:
-    while not done:
-        mcts, player_name = players[current_player]
-        #print(f"player {player_name}'s turn ")
-        start_time = time.time()
-        action = mcts.get_action(env.deepcopy())
-        time_stats[player_name] += time.time() - start_time
-        actions_stats[player_name] += 1
-        print(f"Player {player_name} chose action {action}")
-        reward, done = env.step(action)
-        print_board(env.board)
-        current_player = -current_player
-    winner = winner = -current_player if reward == 1 else (0 if env.turn == 42 else current_player)
-    # except Exception as e:
-    #     logging.error(f"Error during match {match_id}: {e}")
+    turn = 1
+    try:
+        while not done:
+            mcts, player_name = players[current_player]
+            #print(f"player {player_name}'s turn ")
+            neutral_state = env.change_perspective(state, current_player)
+            start_time = time.time()
+            action = mcts.search(neutral_state)
+            #mcts_probs = mcts.search(neutral_state)
+            time_stats[player_name] += time.time() - start_time
+            #action = np.argmax(mcts_probs)
+            actions_stats[player_name] += 1
+            #print(f"Player {player_name} chose action {action}")
+            state ,reward, done = env.step(state ,action, current_player)
+            #print_board(state)
+            turn += 1
+            current_player = -current_player
+
+        if turn == 42 and reward == 0:
+            winner = 0
+        else:
+            winner = -current_player if reward == 1 else current_player
+
+    except Exception as e:
+        logging.error(f"Error during match {match_id}: {e}")
     
-    logging.info(f'Match {match_id} finished. player {winner} won  Winner: {players[winner][1] if winner else "Draw"}')
+    if winner == 0:
+        logging.info(f'Match {match_id} finished. Draw.')
+    elif winner in (1, -1):
+        logging.info(f'Match {match_id} finished. Player {winner} won. Winner: {players[winner][1]}')
+    
     
     return winner, time_stats, actions_stats, match_id, name1, name2
 
 
-def benchmark_mcts(mcts_versions, num_games=20):
+def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
     results = {}
     match_id = 1
 
@@ -83,12 +97,12 @@ def benchmark_mcts(mcts_versions, num_games=20):
         for name1, mcts1 in mcts_versions.items():
             for name2, mcts2 in mcts_versions.items():
                 if name1 != name2:
-                    args = (mcts1, mcts2, match_id, name1, name2)
+                    args = (env, mcts1, mcts2, match_id, name1, name2)
                     args_list.append(args)
                     match_id += 1
 
-    with Pool(1) as pool:
-    #with Pool(cpu_count()) as pool:
+    #with Pool(1) as pool:
+    with Pool(cpu_count()) as pool:
         results_list = pool.starmap(play_game, args_list)
 
     for result in results_list:
@@ -129,7 +143,7 @@ def update_stats(results, name1, name2, winner, game_time_stats, game_actions_st
     elif winner == -1:
         results[matchup_str][name1]["Losses"] += 1
         results[matchup_str][name2]["Wins"] += 1
-    else:
+    elif winner == 0:
         results[matchup_str][name1]["Draws"] += 1
         results[matchup_str][name2]["Draws"] += 1
         
@@ -151,25 +165,27 @@ def update_stats(results, name1, name2, winner, game_time_stats, game_actions_st
 
 
 class Randomf():
-    def get_action(self, env):
-        return random.choice(env.get_legal_moves())
+    def __init__(self, env):
+        self.env = env
+    def search(self, state):
+        return random.choice(self.env.get_legal_moves(state))
 
 
 if __name__ == "__main__":
-
+    env = ConnectFour()
     mcts_versions = {
-    #"1": MCTS(n_simulations=50000), # "genious
-    #"Basic MCTS": MCTS(n_simulations=20_000),
+    "genious": MCTS(env, num_iterations=100_000), # "genious
+    "Basic MCTS": MCTS(env, num_iterations=20_000),
     #"dumbass": MCTS(n_simulations=10_000),
-    "smart" :MCTS(num_simulations=8),
+    #"smart" :MCTS(env=ConnectFour() ,num_iterations= 20000),
 
-    "random" :Randomf(),
+    #"random" :Randomf(env),
     #"dumb" :MCTS(n_simulations=10),
     
     # Add other versions here
     }
 
-    results = benchmark_mcts(mcts_versions, num_games=2)
+    results = benchmark_mcts(mcts_versions, env, num_games=20)
     
     # Prepare data for writing to JSON
     data_to_write = {

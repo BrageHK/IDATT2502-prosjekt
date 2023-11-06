@@ -5,8 +5,8 @@ import copy
 
 import time 
 import curses
-
 from Connect_four_env import ConnectFour
+
 from MCTS.MCTS import MCTS
 from Node.NodeType import NodeType
 
@@ -99,7 +99,11 @@ class ConnectFourTerminal:
 
     def __init__(self, stdscr, opponent_algorithm):
         self.env = ConnectFour()
-        self.running = True
+        self.state = self.env.get_initial_state()
+        self.done = False
+        self.current_player = 1
+        self.result = None
+        self.turn = 1
         self.opponent = opponent_algorithm  # Use the passed algorithm
         self.cursor_x = 0
         self.stdscr = stdscr
@@ -118,7 +122,7 @@ class ConnectFourTerminal:
         self.stdscr.addstr(0, 0, "\nCurrent Board:")
         self.stdscr.addstr(1, 0, "---------------")
         row_num = 2
-        for row in reversed(self.env.board):
+        for row in reversed(self.state):
             self.stdscr.addstr(row_num, 0, "|")
             for cell in row:
                 if cell == 1:
@@ -142,19 +146,7 @@ class ConnectFourTerminal:
             
         self.stdscr.refresh()
 
-    def play_against_ai(self):
-        self.choose_who_starts()
-        
-        if not self.player_starts:
-            self.ai_turn()
-
-        while self.running:
-            self.player_turn()
-            if self.running:
-                self.ai_turn()
-
-
-
+    
     def choose_who_starts(self):
         self.stdscr.addstr(0, 0, "Who starts? (p=Player, a=AI, q=Quit): ")
         self.stdscr.refresh()
@@ -168,19 +160,21 @@ class ConnectFourTerminal:
                 break
             elif choice == ord('q'):
                 self.player_starts = True
-                self.running = False
+                self.done = True
                 return
 
     def ai_turn(self):
         self.draw_board("Waiting for AI...")
-        col = self.opponent.get_action(self.env)
-        self.env.step(col)
-        if self.check_win("AI wins!"):
-            return
+        neutral_state = self.env.change_perspective(self.state, self.current_player)
+        action = self.opponent.search(neutral_state)
+        self.state, self.result , self.done = self.env.step(self.state,action, self.current_player)
+        self.current_player = -self.current_player 
+        self.turn += 1
+
 
     def player_turn(self):
         turn_completed = False
-        while not turn_completed and self.running:
+        while not turn_completed and not self.done:
             self.draw_board()
             key = self.stdscr.getch()
 
@@ -189,37 +183,47 @@ class ConnectFourTerminal:
             elif key in [curses.KEY_RIGHT, ord('l')]:
                 self.cursor_x = min(6, self.cursor_x + 1)
             elif key in [curses.KEY_ENTER, 10, 13, ord(' ')]:
-                if self.env.is_valid_location(self.cursor_x):
-                    self.env.step(self.cursor_x)
+                if self.env.is_valid_location(self.cursor_x, self.state):
+                    self.state, self.result, self.done =self.env.step(self.state, self.cursor_x, self.current_player) 
+                    self.current_player = -self.current_player
+                    self.turn += 1
                     turn_completed = True  # The turn is completed after a valid move.
-                    if self.check_win("You win!"):  # This checks if the game is won and acts accordingly.
-                        return  # Exit the function if the player wins.
                     
             elif key == ord('q'):
-                self.running = False
+                self.done = True
                 turn_completed = True
 
-    def check_win(self, win_message):
-        if self.env.winning_move(self.env.get_last_player()):
-            self.draw_board(win_message)
-            time.sleep(5)
-            self.running = False
-            return True
-        return False
+    def play_against_ai(self):
+        self.choose_who_starts()
 
+        if not self.player_starts:
+            self.ai_turn()
+
+        while not self.done:
+            self.player_turn()
+            if not self.done:
+                self.ai_turn()
+
+        if self.turn == 42 and self.result == 0:
+            winner_message = "It's a draw!"
+        else:
+            # Determine who the winner is
+            is_player_winner = (self.player_starts and self.current_player == -1) or (not self.player_starts and self.current_player == 1)
+            winner_message = "Player wins!" if is_player_winner else "AI wins!"
+
+        self.draw_board(winner_message)
+        time.sleep(5)
 
 
 if __name__ == "__main__":
     #game = ConnectFourPyGame()
     #game.draw_board()
     #game.play_against_ai()
-    opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)
+
+
+    #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)
+    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=10000)
+
 
 
     curses.wrapper(lambda stdscr: ConnectFourTerminal.initialize_terminal(stdscr, opponent_algorithm))
-
-#if __name__ == "__main__":
-#    game = ConnectFourPyGame()
-#    game.draw_board()
-#    game.play_against_ai()
-    # curses.wrapper(ConnectFourTerminal.initialize_terminal)
