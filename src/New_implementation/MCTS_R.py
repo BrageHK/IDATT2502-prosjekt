@@ -45,7 +45,7 @@ class MCTS:
         
         if not done:
             # Expand node
-            node = node.expand()
+            node.expand()
             # Simulate root node
             result, _ = node.simulate()
                 

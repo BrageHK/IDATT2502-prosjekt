@@ -34,20 +34,26 @@ class Node:
         return best_child
     
     def get_ucb(self, child): # TODO: rewrite
-        q_value = 1 - ((child.reward / child.visits) + 1) / 2
-        return q_value + self.c * np.sqrt(np.log(self.visits) / child.visits)
+        # Quality-value
+        q_value = 0
+        if child.visits != 0:
+            q_value = 1 - ((child.reward / child.visits) + 1) / 2
+            
+        # UCB
+        ucb = self.c * np.sqrt(self.visits) / (1 + child.visits) # TODO: In case of errors try with log inside the square root
+        return q_value + ucb
     
     def expand(self):
-        action = np.random.choice(np.where(self.expandable_moves == 1)[0])
-        self.expandable_moves[action] = 0
-        
-        child_state = self.state.copy()
-        child_state, reward, done = self.env.step(child_state, action, 1)
-        child_state = self.env.change_perspective(child_state, player=-1)
-        
-        child = Node(self.env, child_state, self, action)
-        self.children.append(child)
-        return child
+        if self.visits > 0:            
+            legal_moves = self.env.get_legal_moves(self.state)
+            for action in legal_moves:
+                self.expandable_moves[action] = 0
+                child_state = self.state.copy()
+                child_state, reward, done = self.env.step(child_state, action, 1)
+                child_state = child_state = self.env.change_perspective(child_state, player=-1)
+                
+                child = Node(self.env, child_state, self, action)
+                self.children.append(child)
     
     def random_action(self, env, state):
         return np.random.choice(env.get_legal_moves(state))
