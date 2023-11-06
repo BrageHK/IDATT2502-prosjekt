@@ -1,5 +1,5 @@
 import numpy as np
-from MCTS import MCTS
+from MCTS_R import MCTS
 from enum import Enum
 
 class BoardState(Enum):
@@ -33,10 +33,10 @@ class ConnectFour:
             if state[row][col] == 0:
                 return row
     
-    def get_legal_moves(self):
+    def get_legal_moves(self, state):
         legal_moves = []
         for col in range(self.COLUMN_COUNT):
-            if self.is_valid_location(col):
+            if self.is_valid_location(col, state):
                 legal_moves.append(col)
         return legal_moves
     
@@ -137,19 +137,19 @@ class ConnectFour:
         print(board_str)
     
 if __name__ == "__main__":
-    game = ConnectFour()
-    player = -1
-    mcts = MCTS(game, num_iterations=10_000)
+    env = ConnectFour()
+    player = 1
+    mcts = MCTS(env, num_iterations=10_000)
     
-    state = game.get_initial_state()
+    state = env.get_initial_state()
 
 
     while True:
-        game.print_board(state)
+        env.print_board(state)
         
         if player == 1:
-            valid_moves = game.get_legal_moves_bool_array(state)
-            print("valid_moves", [i for i in range(game.action_space) if valid_moves[i] == 1])
+            valid_moves = env.get_legal_moves_bool_array(state)
+            print("valid_moves", [i for i in range(env.action_space) if valid_moves[i] == 1])
             action = int(input(f"{player}:"))
 
             if valid_moves[action] == 0:
@@ -157,20 +157,20 @@ if __name__ == "__main__":
                 continue
                 
         else:
-            neutral_state = game.change_perspective(state, player)
+            neutral_state = env.change_perspective(state, player)
             mcts_probs = mcts.search(neutral_state)
             action = np.argmax(mcts_probs)
             
-        state, reward, done = game.step(state, action, player)
+        state, reward, done = env.step(state, action, player)
         
-        value, is_terminal = game.check_game_over(state, action)
+        value, is_terminal = env.check_game_over(state, action)
         
         if is_terminal:
-            game.print_board(state)
+            env.print_board(state)
             if value == 1:
                 print(player, "won")
             else:
                 print("draw")
             break
             
-        player = game.get_opponent(player)
+        player = env.get_opponent(player)
