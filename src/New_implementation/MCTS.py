@@ -14,8 +14,7 @@ class MCTS:
             
             while node.is_fully_expanded():
                 node = node.select()
-                
-            value, is_terminal = self.game.get_value_and_terminated(node.state, node.action_taken)
+            value, is_terminal = self.game.check_game_over(node.state, node.action_taken)
             value = self.game.get_opponent_value(value)
             
             if not is_terminal:
@@ -25,7 +24,7 @@ class MCTS:
             node.backpropagate(value)    
             
             
-        action_probs = np.zeros(self.game.action_size)
+        action_probs = np.zeros(self.game.action_space)
         for child in root.children:
             action_probs[child.action_taken] = child.visit_count
         action_probs /= np.sum(action_probs)

@@ -1,6 +1,7 @@
 import numpy as np
 from enum import Enum
 import copy
+from MCTS import MCTS
 
 class BoardState(Enum):
     PLAYER_1 = 1
@@ -12,9 +13,9 @@ class ConnectFour:
     def __init__(self):
         self.ROW_COUNT = 6
         self.COLUMN_COUNT = 7
-        self.turn = 1
+        self.turn = 1 # TODO: ERROR?
         self.action_space = 7
-        self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
+        self.board = np.zeros((self.ROW_COUNT, self.COLUMN_COUNT)) # TODO: ERROR?
         self.is_inverted = False
         self.last_row = None
         self.last_col = None
@@ -117,7 +118,6 @@ class ConnectFour:
         return -self.get_player()
     
     def check_game_over(self, piece):
-        
         if self.winning_move(piece):
             return (1, True) # Win
         if self.turn == 42:

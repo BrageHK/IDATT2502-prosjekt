@@ -2,6 +2,9 @@ import numpy as np
 
 class Node:
     def __init__(self, game, state, parent=None, action_taken=None):
+        if not game.check_state_format(state):
+            print("ERROR: In state format Node constructor")
+        
         self.game = game
         self.state = state
         self.parent = parent
@@ -38,7 +41,7 @@ class Node:
         self.expandable_moves[action] = 0
         
         child_state = self.state.copy()
-        child_state = self.game.get_next_state(child_state, action, 1)
+        child_state, reward, done = self.game.step(child_state, action, 1)
         child_state = self.game.change_perspective(child_state, player=-1)
         
         child = Node(self.game, child_state, self, action)
@@ -46,7 +49,7 @@ class Node:
         return child
     
     def simulate(self):
-        value, is_terminal = self.game.get_value_and_terminated(self.state, self.action_taken)
+        value, is_terminal = self.game.check_game_over(self.state, self.action_taken)
         value = self.game.get_opponent_value(value)
         
         if is_terminal:
@@ -57,8 +60,8 @@ class Node:
         while True:
             valid_moves = self.game.get_valid_moves(rollout_state)
             action = np.random.choice(np.where(valid_moves == 1)[0])
-            rollout_state = self.game.get_next_state(rollout_state, action, rollout_player)
-            value, is_terminal = self.game.get_value_and_terminated(rollout_state, action)
+            rollout_state, reward, done = self.game.step(rollout_state, action, rollout_player)
+            value, is_terminal = self.game.check_game_over(rollout_state, action)
             if is_terminal:
                 if rollout_player == -1:
                     value = self.game.get_opponent_value(value)
