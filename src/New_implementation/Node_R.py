@@ -49,26 +49,23 @@ class Node:
         self.children.append(child)
         return child
     
+    def random_action(self, env, state):
+        return np.random.choice(env.get_legal_moves(state))
+    
     def simulate(self):
-        value, is_terminal = self.env.check_game_over(self.state, self.action_taken)
-        value = self.env.get_opponent_value(value)
-        
-        if is_terminal:
-            return value
+        reward, done = self.env.check_game_over(self.state, self.action_taken)
         
         rollout_state = self.state.copy()
         rollout_player = 1
-        while True:
-            valid_moves = self.env.get_legal_moves_bool_array(rollout_state)
-            action = np.random.choice(np.where(valid_moves == 1)[0])
-            rollout_state, reward, done = self.env.step(rollout_state, action, rollout_player)
-            value, is_terminal = self.env.check_game_over(rollout_state, action)
-            if is_terminal:
-                if rollout_player == -1:
-                    value = self.env.get_opponent_value(value)
-                return value    
-            
+        
+        while not done:
+            rollout_action = self.random_action(self.env, rollout_state)
+            rollout_state, reward, done = self.env.step(rollout_state, rollout_action, rollout_player)
             rollout_player = self.env.get_opponent(rollout_player)
+            
+        if self.env.get_opponent(rollout_player) == -1:
+            reward = self.env.get_opponent_value(reward)
+        return reward, rollout_state 
             
     def backpropagate(self, reward):
         self.reward += reward

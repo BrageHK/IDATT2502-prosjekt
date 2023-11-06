@@ -18,7 +18,7 @@ class MCTS:
             
             if not done:
                 node = node.expand()
-                reward = node.simulate()
+                reward, _ = node.simulate()
                 
             node.backpropagate(reward)    
             
@@ -27,5 +27,6 @@ class MCTS:
         for child in root.children:
             action_probs[child.action_taken] = child.visits
         action_probs /= np.sum(action_probs)
+        action = np.argmax(action_probs)
         #TODO returnere action_probs eller action?
-        return action_probs
+        return action
