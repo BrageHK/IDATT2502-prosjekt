@@ -38,7 +38,6 @@ class MCTS():
         # Expand node
         node.expand()
         
-        print("Hei")
         # Simulate root node
         result, _ = node.simulate()
 

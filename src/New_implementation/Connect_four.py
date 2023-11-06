@@ -138,7 +138,7 @@ class ConnectFour:
     
 if __name__ == "__main__":
     env = ConnectFour()
-    player = -1
+    player = 1
     mcts = MCTS(env, num_iterations=10_000)
     
     state = env.get_initial_state()
