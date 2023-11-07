@@ -1,12 +1,12 @@
 import numpy as np
 
-from Node.Node_single import NodeSingle
-from Node.Node_double import NodeDouble
+from Node.Node import Node
+from Node.Node_normalized import NodeNormalized
 from Node.Node_NN import NodeNN
 from Node.NodeType import NodeType
 
 class MCTS:
-    def __init__(self, env, num_iterations, NODE_TYPE=NodeType.NODE_SINGLE, model=None):
+    def __init__(self, env, num_iterations, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None):
         self.env = env
         self.num_iterations = num_iterations
         self.NODE_TYPE = NODE_TYPE
@@ -14,10 +14,10 @@ class MCTS:
         
         
     def create_node(self, state):
-        if self.NODE_TYPE == NodeType.NODE_SINGLE:
-            return NodeSingle(self.env, state)
-        elif self.NODE_TYPE == NodeType.NODE_DOUBLE:
-            return NodeDouble(self.env, state)
+        if self.NODE_TYPE == NodeType.NODE:
+            return Node(self.env, state)
+        elif self.NODE_TYPE == NodeType.NODE_NORMALIZED:
+            return NodeNormalized(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_NN:
             return NodeNN(self.env, self)
         
@@ -57,7 +57,7 @@ class MCTS:
     def search(self, state, training=False):
         root = self.create_node(state)
         
-        if self.NODE_TYPE == NodeType.NODE_SINGLE or self.NODE_TYPE == NodeType.NODE_DOUBLE:
+        if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED:
             for _ in range(self.num_iterations):
                 self.mcts(root)
         elif self.NODE_TYPE == NodeType.NODE_NN:

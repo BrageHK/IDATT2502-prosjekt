@@ -1,6 +1,6 @@
 import numpy as np
 
-class NodeSingle:
+class Node:
     def __init__(self, env, state, parent=None, action_taken=None):
         if not env.check_state_format(state):
             print("ERROR: In state format Node constructor")
@@ -26,18 +26,18 @@ class NodeSingle:
         while node.is_fully_expanded():
             max_UCB = float('-inf')
             for child in node.children:
-                UCB_value = node.get_ucb(child)
+                UCB_value = node.calculate_UCB(child)
                 if UCB_value > max_UCB:
                     max_UCB = UCB_value
                     best_child = child
             node = best_child
         return best_child
     
-    def get_ucb(self, child): # TODO: rewrite
+    def calculate_UCB(self, child):
         if child.visits == 0:
             return float('inf')
-
-        return -child.reward / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits) # TODO: Why is this negative?
+    
+        return -child.reward / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
         
     def expand(self):
         if self.visits > 0:

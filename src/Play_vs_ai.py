@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
 
     #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)
-    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=10000)
+    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=10_000)
 
 
 
