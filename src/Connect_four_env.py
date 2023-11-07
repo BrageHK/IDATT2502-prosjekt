@@ -1,5 +1,5 @@
 import numpy as np
-from MCTS.MCTS import MCTS
+#from MCTS.MCTS import MCTS
 from enum import Enum
 
 class BoardState(Enum):
@@ -53,7 +53,7 @@ class ConnectFour:
         if action == None:
             return False
         
-        row = np.min(np.where(state[:, action] != 0))
+        row = np.max(np.where(state[:, action] != 0))
         column = action
         player = state[row][column]
 
@@ -123,41 +123,41 @@ class ConnectFour:
         return encoded_state
 
     
-if __name__ == "__main__":
-    env = ConnectFour()
-    player = -1
-    mcts = MCTS(env, num_iterations=10_000)
-    
-    state = env.get_initial_state()
-
-
-    while True:
-        env.print_board(state)
-        
-        if player == 1:
-            valid_moves = env.get_legal_moves_bool_array(state)
-            print("valid_moves", [i for i in range(env.action_space) if valid_moves[i] == 1])
-            action = int(input(f"{player}:"))
-
-            if valid_moves[action] == 0:
-                print("action not valid")
-                continue
-                
-        else:
-            neutral_state = env.change_perspective(state, player)
-            action = mcts.search(neutral_state)
-            #action = np.argmax(mcts_probs)
-            
-        state, reward, done = env.step(state, action, player)
-        
-        value, is_terminal = env.check_game_over(state, action)
-        
-        if is_terminal:
-            env.print_board(state)
-            if value == 1:
-                print(player, "won")
-            else:
-                print("draw")
-            break
-            
-        player = env.get_opponent(player)
+#if __name__ == "__main__":
+#    env = ConnectFour()
+#    player = -1
+#    mcts = MCTS(env, num_iterations=10_000)
+#    
+#    state = env.get_initial_state()
+#
+#
+#    while True:
+#        env.print_board(state)
+#        
+#        if player == 1:
+#            valid_moves = env.get_legal_moves_bool_array(state)
+#            print("valid_moves", [i for i in range(env.action_space) if valid_moves[i] == 1])
+#            action = int(input(f"{player}:"))
+#
+#            if valid_moves[action] == 0:
+#                print("action not valid")
+#                continue
+#                
+#        else:
+#            neutral_state = env.change_perspective(state, player)
+#            action = mcts.search(neutral_state)
+#            #action = np.argmax(mcts_probs)
+#            
+#        state, reward, done = env.step(state, action, player)
+#        
+#        value, is_terminal = env.check_game_over(state, action)
+#        
+#        if is_terminal:
+#            env.print_board(state)
+#            if value == 1:
+#                print(player, "won")
+#            else:
+#                print("draw")
+#            break
+#            
+#        player = env.get_opponent(player)

@@ -2,7 +2,7 @@ import time
 import logging
 from Connect_four_env import ConnectFour
 from MCTS.MCTS import MCTS
-#from Node.NodeType import NodeType
+from Node.NodeType import NodeType
 import json
 import numpy as np
 import random
@@ -44,6 +44,7 @@ def notify_benchmark_finished():
 
 def play_game(env, mcts1, mcts2, match_id, name1, name2):
     logging.info(f'Starting match {match_id} between {name1} and {name2}')
+    env = ConnectFour()
     state = env.get_initial_state()
     time_stats = {name1: 0, name2: 0}
     actions_stats = {name1: 0, name2: 0}
@@ -53,31 +54,34 @@ def play_game(env, mcts1, mcts2, match_id, name1, name2):
     done = False
     reward = None
     current_player = 1
-    turn = 1
-    try:
-        while not done:
-            mcts, player_name = players[current_player]
-            #print(f"player {player_name}'s turn ")
-            neutral_state = env.change_perspective(state, current_player)
-            start_time = time.time()
-            action = mcts.search(neutral_state)
-            #mcts_probs = mcts.search(neutral_state)
-            time_stats[player_name] += time.time() - start_time
-            #action = np.argmax(mcts_probs)
-            actions_stats[player_name] += 1
-            #print(f"Player {player_name} chose action {action}")
-            state ,reward, done = env.step(state ,action, current_player)
-            #print_board(state)
-            turn += 1
-            current_player = -current_player
+    turn = 0
+    #try:
+    while not done:
+        mcts, player_name = players[current_player]
+        #print(f"player {player_name}'s turn ")
+        neutral_state = env.change_perspective(state, current_player)
+        start_time = time.time()
+        action = mcts.search(neutral_state)
+        #mcts_probs = mcts.search(neutral_state)
+        time_stats[player_name] += time.time() - start_time
+        #action = np.argmax(mcts_probs)
+        actions_stats[player_name] += 1
+        #print(f"Player {player_name} chose action {action}")
+        turn += 1
+        state ,reward, done = env.step(state ,action, current_player)
+        #print_board(state)
+        #print_board(state)
+        current_player = -current_player
 
-        if turn == 42 and reward == 0:
-            winner = 0
-        else:
-            winner = -current_player if reward == 1 else current_player
+    print_board(state)
 
-    except Exception as e:
-        logging.error(f"Error during match {match_id}: {e}")
+    if turn == 42 and reward == 0:
+        winner = 0
+    else:
+        winner = -current_player if reward == 1 else current_player
+
+    #except Exception as e:
+    #    logging.error(f"Error during match {match_id}: {e}")
     
     if winner == 0:
         logging.info(f'Match {match_id} finished. Draw.')
@@ -174,8 +178,8 @@ class Randomf():
 if __name__ == "__main__":
     env = ConnectFour()
     mcts_versions = {
-    "genious": MCTS(env, num_iterations=100_000), # "genious
-    "Basic MCTS": MCTS(env, num_iterations=20_000),
+    "genious": MCTS(env, num_iterations=10_000), # "genious
+    "Basic MCTS": MCTS(env, num_iterations=1_000),
     #"dumbass": MCTS(n_simulations=10_000),
     #"smart" :MCTS(env=ConnectFour() ,num_iterations= 20000),
 
@@ -185,7 +189,7 @@ if __name__ == "__main__":
     # Add other versions here
     }
 
-    results = benchmark_mcts(mcts_versions, env, num_games=20)
+    results = benchmark_mcts(mcts_versions, env, num_games=100)
     
     # Prepare data for writing to JSON
     data_to_write = {
