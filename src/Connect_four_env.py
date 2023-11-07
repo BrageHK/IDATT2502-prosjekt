@@ -105,8 +105,6 @@ class ConnectFour:
         return: (state, reward, done)
         """
         
-        print("Action: ", action)
-        
         self.drop_piece(state, action, player)
 
         reward, done = self.check_game_over(state, action)

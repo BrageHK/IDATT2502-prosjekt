@@ -1,6 +1,6 @@
 import numpy as np
 
-class NodeSingle:
+class Node:
     def __init__(self, env, state, parent=None, action_taken=None):
         if not env.check_state_format(state):
             print("ERROR: In state format Node constructor")
@@ -26,24 +26,18 @@ class NodeSingle:
         while node.is_fully_expanded():
             max_UCB = float('-inf')
             for child in node.children:
-                UCB_value = node.get_ucb(child)
+                UCB_value = node.calculate_UCB(child)
                 if UCB_value > max_UCB:
                     max_UCB = UCB_value
                     best_child = child
             node = best_child
         return best_child
     
-    def get_ucb(self, child): # TODO: rewrite
+    def calculate_UCB(self, child):
         if child.visits == 0:
             return float('inf')
-        # Add 1 and divide by 2 to always have q_value between 0 and 1. If this is not done the q_value can be between -1 and 1
-        # 1 - expression becuase the view is from the parent and not the child
-        
-        # child.reward / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
-        
-        
-        q_value = 1 - ((child.reward / child.visits) + 1) / 2 
-        return q_value + np.sqrt(self.c * np.log(self.visits) / child.visits)
+    
+        return -child.reward / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
         
     def expand(self):
         if self.visits > 0:
@@ -54,7 +48,7 @@ class NodeSingle:
                 child_state, reward, done = self.env.step(child_state, action, 1)
                 child_state = child_state = self.env.change_perspective(child_state, player=-1)
                 
-                child = NodeSingle(self.env, child_state, self, action)
+                child = Node(self.env, child_state, self, action)
                 self.children.append(child)
     
     def random_action(self, env, state):
