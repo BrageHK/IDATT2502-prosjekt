@@ -1,29 +1,23 @@
 import numpy as np
+import copy
+from Connect_four_env import ConnectFour
 from NeuralNet import AlphaPredictorNerualNet
 import torch
 
-class NodeNN:
-    def __init__(self, env, state, parent=None, action_taken=None, priority=0, model=AlphaPredictorNerualNet(4)):
-        if not env.check_state_format(state):
-            print("ERROR: In state format Node constructor")
-        
+
+class NodeNN():
+    def __init__(self, priority=0, parent=None, env=ConnectFour(), action=None, model=AlphaPredictorNerualNet(4)):
         self.children = []
         self.parent = parent
-        self.action_taken = action_taken
+        self.action = action
         self.env = env
         self.reward = 0
         self.visits = 0
-        self.state = state
         self.nn_model = model
         self.priority = priority
         
-        self.c = 4  # Exploration parameter
+        self.c = 4 # Exploration parameter
         
-        self.expandable_moves = env.get_legal_moves_bool_array(state)
-        
-    def is_fully_expanded(self):
-        return np.sum(self.expandable_moves) == 0 and len(self.children) > 0
-    
     def calculate_PUCT(self, child): 
         # Quality-value
         q_value = 0
@@ -34,19 +28,17 @@ class NodeNN:
         ucb = self.c * child.priority * np.sqrt(np.log(self.visits)) / (1 + child.visits) # TODO: In case of errors try with log inside the square root
         
         return q_value + ucb
-    
+        
+
     def select(self):
         node = self
-        best_child = self
-        while node.is_fully_expanded():
-            max_UCB = float('-inf')
+        while bool(node.children): 
+            UCB_values = []
             for child in node.children:
-                UCB_value = node.calculate_PUCT(child)
-                if UCB_value > max_UCB:
-                    max_UCB = UCB_value
-                    best_child = child
-            node = best_child
-        return best_child
+                UCB_values.append(node.calculate_PUCT(child))
+            node = node.children[np.argmax(UCB_values)]
+        
+        return node
     
     @torch.no_grad()
     def get_neural_network_predictions(self):
@@ -60,35 +52,36 @@ class NodeNN:
         if sum != 0:
             policy /= sum
         else:
+            print("What is going on? Policy before: ", policy, " sum: ", sum)
             policy = np.zeros(self.env.COLUMN_COUNT)
             policy[np.random.choice(self.env.get_legal_moves())] = 1
+        #print("Policy after: ", policy)
         
         value = value.item()
+        
+        print("Legal moves: ", self.env.get_legal_moves())
+        print("policy", policy)
     
         return policy, value
-        
+
+    # Adds a child node for untried action and returns it
     def expand(self, policy):
         if self.visits > 0:
-            legal_moves = self.env.get_legal_moves(self.state)
             for action, probability in enumerate(policy):
-                self.expandable_moves[action] = 0
                 if probability > 0: 
-                    child_state = self.state.copy()
-                    child_state, reward, done = self.env.step(child_state, action, 1)
-                    child_state = child_state = self.env.change_perspective(child_state, player=-1)
+                    next_env = self.env.deepcopy()
+                    next_env.step(action)
+                    child = NodeNN(probability, parent=self, env=next_env, action=action, model=self.nn_model)
                     
-                    child = NodeNN(self.env, child_state, self, action)
                     self.children.append(child)
-    
-    def random_action(self, env, state):
-        return np.random.choice(env.get_legal_moves(state))
-            
-    def backpropagate(self, reward):
-        self.reward += reward
-        self.visits += 1
-        
-        if self.parent:
-            opponent_reward = self.env.get_opponent_value(reward)
-            self.parent.backpropagate(opponent_reward)
 
-        
+    def random_act(self, env):
+        return np.random.choice(env.get_legal_moves())
+    
+    def backpropagate(self, value):
+        self.visits += 1
+        # TODO: invert here???
+        self.reward += value
+
+        if self.parent:
+            self.parent.backpropagate(-value) # Minus because next backpropocation is for other player
