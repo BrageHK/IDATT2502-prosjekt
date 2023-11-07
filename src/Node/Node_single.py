@@ -36,8 +36,14 @@ class NodeSingle:
     def get_ucb(self, child): # TODO: rewrite
         if child.visits == 0:
             return float('inf')
-
-        return -child.reward / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits) # TODO: Why is this negative?
+        # Add 1 and divide by 2 to always have q_value between 0 and 1. If this is not done the q_value can be between -1 and 1
+        # 1 - expression becuase the view is from the parent and not the child
+        
+        # child.reward / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
+        
+        
+        q_value = 1 - ((child.reward / child.visits) + 1) / 2 
+        return q_value + np.sqrt(self.c * np.log(self.visits) / child.visits)
         
     def expand(self):
         if self.visits > 0:
@@ -48,7 +54,7 @@ class NodeSingle:
                 child_state, reward, done = self.env.step(child_state, action, 1)
                 child_state = child_state = self.env.change_perspective(child_state, player=-1)
                 
-                child = Node(self.env, child_state, self, action)
+                child = NodeSingle(self.env, child_state, self, action)
                 self.children.append(child)
     
     def random_action(self, env, state):

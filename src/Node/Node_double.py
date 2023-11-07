@@ -37,8 +37,10 @@ class NodeDouble:
     def get_ucb(self, child): # TODO: rewrite
         if child.visits == 0:
             return float('inf')
+        
+        q_value = 1 - (np.abs(child.reward1 - child.reward2) / child.visits)
+        return q_value + np.sqrt(self.c * np.log(self.visits) / child.visits)
 
-        return -np.abs(child.reward1 - child.reward2) / child.visits + np.sqrt(self.c * np.log(self.visits) / child.visits)
         
     def expand(self):
         if self.visits > 0:
@@ -83,6 +85,7 @@ class NodeDouble:
         
         if self.parent:
             # TODO: might get oppoenent value for result?
+            result = self.env.get_opponent_value(result)
             self.parent.backpropagate(result)
 
         
