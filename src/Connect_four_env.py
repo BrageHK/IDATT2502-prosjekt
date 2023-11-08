@@ -47,19 +47,29 @@ class ConnectFour:
             else:
                 legal_moves.append(0)
         return np.array(legal_moves)
+    
+    def get_top_piece(self, state, col):
+        """
+        (piece, row)
+        """
+        for row in range(self.ROW_COUNT-1, -1, -1):
+            if state[row][col] != 0:
+                return state[row][col], row
+        # Throw error
+        print("This is not good loool")
+        return None
 
     def check_win(self, state, action): # TODO: rewrite to be understandable
         if action == None:
             return False
         
-        row = np.min(np.where(state[:, action] != 0))
-        column = action
-        player = state[row][column]
+        player, row = self.get_top_piece(state, action)
+        col = action
 
         def count(offset_row, offset_column):
             for i in range(1, self.in_a_row):
                 r = row + offset_row * i
-                c = action + offset_column * i
+                c = col + offset_column * i
                 if (
                     r < 0 
                     or r >= self.ROW_COUNT
@@ -71,7 +81,7 @@ class ConnectFour:
             return self.in_a_row - 1
 
         return (
-            count(1, 0) >= self.in_a_row - 1 # vertical
+            count(-1, 0) >= self.in_a_row - 1 # vertical
             or (count(0, 1) + count(0, -1)) >= self.in_a_row - 1 # horizontal
             or (count(1, 1) + count(-1, -1)) >= self.in_a_row - 1 # top left diagonal
             or (count(1, -1) + count(-1, 1)) >= self.in_a_row - 1 # top right diagonal
@@ -120,3 +130,21 @@ class ConnectFour:
         player_mask = [state == board_state.value for board_state in BoardState]
         encoded_state = np.stack(player_mask).astype(np.float32)
         return encoded_state
+
+
+
+if __name__ == "__main__":
+    env = ConnectFour()
+
+    state = [
+        [0, 0, 1, 0, 0, 0, 1],
+        [0, 0, 0, 1, 0, 0, -1],
+        [0, 0, 0, 0, 1, 0, -1],
+        [0, 0, 0, 0, 0, 1, -1],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        ]
+    piece, row = env.get_top_piece(state, 6)
+    print("piece: ", piece, " row: ", row)
+    print("state[0][6]: ", state[0][6])
+    print("Check win", env.check_win(state, 1))

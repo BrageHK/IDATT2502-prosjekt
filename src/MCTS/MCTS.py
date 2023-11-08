@@ -12,14 +12,13 @@ class MCTS:
         self.NODE_TYPE = NODE_TYPE
         self.model = model
         
-        
     def create_node(self, state):
         if self.NODE_TYPE == NodeType.NODE:
             return Node(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_NORMALIZED:
             return NodeNormalized(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_NN:
-            return NodeNN(self.env, self)
+            return NodeNN(self.env, state)
         
     def mcts_AlphaZero(self, root):
         # Select
@@ -30,13 +29,13 @@ class MCTS:
         
         if not done:
             # Predicts probabilities for each move and winner probability
-            policy, value = node.get_neural_network_predictions()
+            policy, result = node.get_neural_network_predictions()
             
             # Expand node
             node.expand(policy)
 
         # Backpropagate with simulation result
-        node.backpropagate(value)
+        node.backpropagate(result)
     
     def mcts(self, root):
         # Select
@@ -66,14 +65,17 @@ class MCTS:
         else:
             raise Exception("Invalid node type")
             
+        
+        
+        visits = np.array([child.visits for child in root.children])
+        #print("Visits: ", visits)
+        best_action = max(root.children, key=lambda child: child.visits, default=None).action_taken
+        #print("Best action: ", best_action)
+        
         if training:
             visits = np.zeros(self.env.COLUMN_COUNT)
             for child in root.children:
-                visits[child.action] = child.visits
+                visits[child.action_taken] = child.visits
             probabilties = visits / np.sum(visits)
             return probabilties, best_action
-        
-        visits = np.array([child.visits for child in root.children])
-        print("Visits: ", visits)
-        best_action = max(root.children, key=lambda child: child.visits, default=None).action_taken
         return best_action
