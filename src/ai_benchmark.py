@@ -44,7 +44,6 @@ def notify_benchmark_finished():
 
 def play_game(env, mcts1, mcts2, match_id, name1, name2):
     logging.info(f'Starting match {match_id} between {name1} and {name2}')
-    env = ConnectFour()
     state = env.get_initial_state()
     time_stats = {name1: 0, name2: 0}
     actions_stats = {name1: 0, name2: 0}
@@ -55,33 +54,33 @@ def play_game(env, mcts1, mcts2, match_id, name1, name2):
     reward = None
     current_player = 1
     turn = 0
-    #try:
-    while not done:
-        mcts, player_name = players[current_player]
-        #print(f"player {player_name}'s turn ")
-        neutral_state = env.change_perspective(state, current_player)
-        start_time = time.time()
-        action = mcts.search(neutral_state)
-        #mcts_probs = mcts.search(neutral_state)
-        time_stats[player_name] += time.time() - start_time
-        #action = np.argmax(mcts_probs)
-        actions_stats[player_name] += 1
-        #print(f"Player {player_name} chose action {action}")
-        turn += 1
-        state ,reward, done = env.step(state ,action, current_player)
-        #print_board(state)
-        #print_board(state)
-        current_player = -current_player
+    try:
+        while not done:
+            mcts, player_name = players[current_player]
+            #print(f"player {player_name}'s turn ")
+            neutral_state = env.change_perspective(state, current_player)
+            start_time = time.time()
+            action = mcts.search(neutral_state)
+            #mcts_probs = mcts.search(neutral_state)
+            time_stats[player_name] += time.time() - start_time
+            #action = np.argmax(mcts_probs)
+            actions_stats[player_name] += 1
+            #print(f"Player {player_name} chose action {action}")
+            turn += 1
+            state ,reward, done = env.step(state ,action, current_player)
+            #print_board(state)
+            #print_board(state)
+            current_player = -current_player
 
-    print_board(state)
+        print_board(state)
 
-    if turn == 42 and reward == 0:
-        winner = 0
-    else:
-        winner = -current_player if reward == 1 else current_player
+        if turn == 42 and reward == 0:
+            winner = 0
+        else:
+            winner = -current_player if reward == 1 else current_player
 
-    #except Exception as e:
-    #    logging.error(f"Error during match {match_id}: {e}")
+    except Exception as e:
+        logging.error(f"Error during match {match_id}: {e}")
     
     if winner == 0:
         logging.info(f'Match {match_id} finished. Draw.')
@@ -115,9 +114,17 @@ def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
         matchup_str = str(matchup)
         if matchup_str not in results:
             results[matchup_str] = {
-                name1: {"Wins": 0, "Losses": 0, "Draws": 0, "TotalTime": 0, "TotalActions": 0, "GamesPlayed": 0},
-                name2: {"Wins": 0, "Losses": 0, "Draws": 0, "TotalTime": 0, "TotalActions": 0, "GamesPlayed": 0}
-        }
+                name1: {
+                    "Wins": 0, "Losses": 0, "Draws": 0, 
+                    "TotalTime": 0, "TotalActions": 0, 
+                    "GamesPlayed": 0, "FirstPlayerWins": 0  # Added "FirstPlayerWins" here
+                },
+                name2: {
+                    "Wins": 0, "Losses": 0, "Draws": 0, 
+                    "TotalTime": 0, "TotalActions": 0, 
+                    "GamesPlayed": 0, "FirstPlayerWins": 0  # And here
+                }
+            }
 
         results = update_stats(
             results,
@@ -136,14 +143,23 @@ def update_stats(results, name1, name2, winner, game_time_stats, game_actions_st
     # Ensure the matchup entry exists with all necessary sub-structures
     if matchup_str not in results:
         results[matchup_str] = {
-            name1: {"Wins": 0, "Losses": 0, "Draws": 0, "TotalTime": 0, "TotalActions": 0, "GamesPlayed": 0},
-            name2: {"Wins": 0, "Losses": 0, "Draws": 0, "TotalTime": 0, "TotalActions": 0, "GamesPlayed": 0}
+            name1: {
+                "Wins": 0, "Losses": 0, "Draws": 0, 
+                "TotalTime": 0, "TotalActions": 0, 
+                "GamesPlayed": 0, "FirstPlayerWins": 0  # Added "FirstPlayerWins" here
+            },
+            name2: {
+                "Wins": 0, "Losses": 0, "Draws": 0, 
+                "TotalTime": 0, "TotalActions": 0, 
+                "GamesPlayed": 0, "FirstPlayerWins": 0  # And here
+            }
         }
-        
-    # Update the win/loss/draw counts
+
+    # Update the win/loss/draw counts and "FirstPlayerWins"
     if winner == 1:
         results[matchup_str][name1]["Wins"] += 1
         results[matchup_str][name2]["Losses"] += 1
+        results[matchup_str][name1]["FirstPlayerWins"] += 1  # Increment if first player wins
     elif winner == -1:
         results[matchup_str][name1]["Losses"] += 1
         results[matchup_str][name2]["Wins"] += 1
@@ -168,6 +184,7 @@ def update_stats(results, name1, name2, winner, game_time_stats, game_actions_st
     return results
 
 
+
 class Randomf():
     def __init__(self, env):
         self.env = env
@@ -178,8 +195,10 @@ class Randomf():
 if __name__ == "__main__":
     env = ConnectFour()
     mcts_versions = {
-    "genious": MCTS(env, num_iterations=10_000), # "genious
-    "Basic MCTS": MCTS(env, num_iterations=1_000),
+    "genious normalized": MCTS(env, num_iterations=10_000, NODE_TYPE=NodeType.NODE_NORMALIZED), # "genious
+    "genious ": MCTS(env, num_iterations=10_000, NODE_TYPE=NodeType.NODE), # "genious
+    "Basic MCTS ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE),
+    "Basic normalized ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE_NORMALIZED),
     #"dumbass": MCTS(n_simulations=10_000),
     #"smart" :MCTS(env=ConnectFour() ,num_iterations= 20000),
 
@@ -189,7 +208,7 @@ if __name__ == "__main__":
     # Add other versions here
     }
 
-    results = benchmark_mcts(mcts_versions, env, num_games=100)
+    results = benchmark_mcts(mcts_versions, env, num_games=20)
     
     # Prepare data for writing to JSON
     data_to_write = {
