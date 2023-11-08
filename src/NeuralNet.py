@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import random
 import numpy as np
+import pickle
 
 class ResBlock(nn.Module):
     def __init__(self, hidden_dim):
@@ -23,6 +24,9 @@ class ResBlock(nn.Module):
 class AlphaPredictorNerualNet(nn.Module):
     def __init__(self, num_resBlocks, object_dim=42, action_dim=7, outcome_dim=3, hidden_dim=100, hidden_dim2=32):
         super(AlphaPredictorNerualNet, self).__init__()
+        
+        self.policy_loss_history = []
+        self.value_loss_history = []
         
         self.optimizer = None
         
@@ -64,11 +68,17 @@ class AlphaPredictorNerualNet(nn.Module):
         #    nn.Linear(hidden_dim, outcome_dim),
         #    nn.Sigmoid()
         #)
+        
+    def save_loss_values_to_file(self, filename):
+        with open(filename, "wb") as file:
+            pickle.dump((self.policy_loss_history, self.value_loss_history), file)
 
     # Cross Entropy loss
     def loss(self, policy_logits, value_logits, policy_target, value_target): #
         policy_loss = nn.CrossEntropyLoss()(policy_logits, policy_target)
         value_loss = nn.MSELoss()(value_logits, value_target)
+        self.policy_loss_history.append(policy_loss.item())
+        self.value_loss_history.append(value_loss.item())
         return policy_loss + value_loss
     
     def optimize(self, model, memory, epoch=20, learning_rate=0.001, batch_size=64): #

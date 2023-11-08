@@ -14,7 +14,6 @@ from plyer import notification
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-
 def print_board(board):
     inverted_board = np.flipud(board)  # This inverts the y-axis.
     board_str = ""
@@ -216,9 +215,9 @@ if __name__ == "__main__":
     }
         
     # Write results to a JSON file
-    with open('results.json', 'w') as f:
+    with open('data/results.json', 'w') as f:
         json.dump(data_to_write, f, indent=4)
         
-    print("Results have been written to results.json")
+    print("Results have been written to data/results.json")
 
 

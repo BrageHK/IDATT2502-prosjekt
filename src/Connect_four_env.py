@@ -50,16 +50,14 @@ class ConnectFour:
     
     def get_top_piece(self, state, col):
         """
-        (piece, row)
+        return: (piece, row)
         """
         for row in range(self.ROW_COUNT-1, -1, -1):
             if state[row][col] != 0:
                 return state[row][col], row
-        # Throw error
-        print("This is not good loool")
-        return None
+        raise ValueError("Trying to get top piece from empty column")
 
-    def check_win(self, state, action): # TODO: rewrite to be understandable
+    def check_win(self, state, action):
         if action == None:
             return False
         
@@ -109,12 +107,6 @@ class ConnectFour:
     
     
     def step(self, state, action, player):
-        """
-        The agent does an action, and the environment returns the next state, the reward, and whether the game is over.
-        The action number corresponds to the column which the piece should be dropped in.
-        return: (state, reward, done)
-        """
-        
         self.drop_piece(state, action, player)
 
         reward, done = self.check_game_over(state, action)
@@ -134,6 +126,8 @@ class ConnectFour:
 
 
 if __name__ == "__main__":
+    # Testing the environment
+    
     env = ConnectFour()
 
     state = [
@@ -147,4 +141,4 @@ if __name__ == "__main__":
     piece, row = env.get_top_piece(state, 6)
     print("piece: ", piece, " row: ", row)
     print("state[0][6]: ", state[0][6])
-    print("Check win", env.check_win(state, 1))
+    print("Check win", env.check_win(state, 2))

@@ -10,14 +10,14 @@ from Node.NodeType import NodeType
 import pickle
 
 class Trainer:
-    def __init__(self, env=ConnectFour(), num_iterations=500, model=AlphaPredictorNerualNet(4)):
+    def __init__(self, env=ConnectFour(), num_iterations=800, model=AlphaPredictorNerualNet(4)):
         self.model = model
         self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_NN, model=model)
         self.env = env
     
     def save_model_and_optimizer(self, filename):
         torch.save(self.model.state_dict(), filename)
-        #torch.save(self.model.optimizer.state_dict(), f"optimizer-{depth}-depth-and-{games}-games.pt")
+        # torch.save(self.model.optimizer.state_dict(), f"optimizer-{depth}-depth-and-{games}-games.pt")
         
     def load_model(self, path):
         self.model.load_state_dict(torch.load(path))
@@ -26,8 +26,9 @@ class Trainer:
         self.model.eval()
         
         # Plays num_games against itself and stores the data in memory
+        print("Starting self play")
         for i in range(num_games):
-            print("Playing game: ", i)
+            #print("Playing game: ", i)
             memory += self.play_game()
             
         # Trains the model on the data in memory
@@ -77,35 +78,42 @@ if __name__ == "__main__":
     trainer = Trainer(env = ConnectFour())
 
     training_iterations = 0
-    games = 20
+    games = 50
     memory = []
-    filename = "model.pt"
-    filename_games = "games.pk1"
+    filename = "data/model.pt"
+    filename_games = "data/games.pk1"
+    filename_loss_values = "data/loss_values.pk1"
 
     try:
         trainer.load_model(filename)
     except FileNotFoundError:
         print("No model found with name: ", filename)
+        exit()
     
     try:
         memory = trainer.load_games(filename_games)
     except FileNotFoundError:
-        print("No memory found")
+        print("No memory found from file: ", filename_games)
+        exit()
     
     while True:
         print("Training iteration: ", training_iterations)
         try:
-            memory+=trainer.train(num_games=games, memory=memory)
+            memory += trainer.train(num_games=games, memory=memory)
         except KeyboardInterrupt:
-            print("\nSaving model and games")
+            print("\nSaving model")
             trainer.save_model_and_optimizer(filename)
+            print("Saving games")
             trainer.save_games(memory, filename_games)
+            print("Saving loss values")
+            trainer.model.save_loss_values_to_file(filename_loss_values)
             break
         
         if training_iterations % 20 == 0:
-            print("\nSaving model and games")
+            print("\nSaving model, games and loss values")
             trainer.save_model_and_optimizer(filename)
             trainer.save_games(memory, filename_games)
+            trainer.model.save_loss_values_to_file(filename_loss_values)
         
         training_iterations += 1
     
