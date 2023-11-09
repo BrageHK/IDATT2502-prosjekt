@@ -1,16 +1,19 @@
 import numpy as np
+import time
 
 from Node.Node import Node
 from Node.Node_normalized import NodeNormalized
 from Node.Node_NN import NodeNN
 from Node.NodeType import NodeType
+from Node.Node_threshold import NodeThreshold
 
 class MCTS:
-    def __init__(self, env, num_iterations, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None):
+    def __init__(self, env, num_iterations, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None, turn_time=None):
         self.env = env
         self.num_iterations = num_iterations
         self.NODE_TYPE = NODE_TYPE
         self.model = model
+        self.turn_time = turn_time
         
     def create_node(self, state):
         if self.NODE_TYPE == NodeType.NODE:
@@ -19,6 +22,10 @@ class MCTS:
             return NodeNormalized(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_NN:
             return NodeNN(self.env, state)
+        elif self.NODE_TYPE == NodeType.NODE_THRESHOLD:
+            return NodeThreshold(self.env, state)
+        else:
+            raise Exception("Invalid node type")
         
     def mcts_AlphaZero(self, root):
         # Select
@@ -56,17 +63,27 @@ class MCTS:
     def search(self, state, training=False):
         root = self.create_node(state)
         
-        if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED:
-            for _ in range(self.num_iterations):
-                self.mcts(root)
-        elif self.NODE_TYPE == NodeType.NODE_NN:
-            for _ in range(self.num_iterations):
-                self.mcts_AlphaZero(root)
+        if self.turn_time == None:
+            if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
+                for _ in range(self.num_iterations):
+                    self.mcts(root)
+            elif self.NODE_TYPE == NodeType.NODE_NN:
+                for _ in range(self.num_iterations):
+                    self.mcts_AlphaZero(root)
+            else:
+                raise Exception("Invalid node type")
         else:
-            raise Exception("Invalid node type")
+            if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
+                start = time.time()
+                while time.time() - start < self.turn_time:
+                    self.mcts(root)
+            elif self.NODE_TYPE == NodeType.NODE_NN:
+                start = time.time()
+                while time.time() - start < self.turn_time:
+                    self.mcts_AlphaZero(root)
+            else:
+                raise Exception("Invalid node type")
             
-        
-        
         visits = np.array([child.visits for child in root.children])
         #print("Visits: ", visits)
         best_action = max(root.children, key=lambda child: child.visits, default=None).action_taken

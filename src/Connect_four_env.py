@@ -124,7 +124,6 @@ class ConnectFour:
         return encoded_state
 
 
-
 if __name__ == "__main__":
     # Testing the environment
     

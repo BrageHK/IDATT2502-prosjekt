@@ -60,15 +60,6 @@ class AlphaPredictorNerualNet(nn.Module):
             nn.Tanh()
         )
         
-        # Predicts probability for the expected outcomes (win current player, draw, win other player)
-        # If one of the values in the array is over the threshold - stop simulation, else continue simulation
-        #self.value_network = nn.Sequential(
-        #    nn.Linear(object_dim, hidden_dim),
-        #    nn.Sigmoid(),
-        #    nn.Linear(hidden_dim, outcome_dim),
-        #    nn.Sigmoid()
-        #)
-        
     def save_loss_values_to_file(self, filename):
         with open(filename, "wb") as file:
             pickle.dump((self.policy_loss_history, self.value_loss_history), file)
@@ -82,7 +73,8 @@ class AlphaPredictorNerualNet(nn.Module):
         return policy_loss + value_loss
     
     def optimize(self, model, memory, epoch=20, learning_rate=0.001, batch_size=64): #
-        self.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+        if self.optimizer == None:
+            self.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
         for _ in range(epoch):
             random.shuffle(memory)
 
@@ -121,3 +113,4 @@ class AlphaPredictorNerualNet(nn.Module):
         value = self.value_network(x)
         
         return policy, value
+    
