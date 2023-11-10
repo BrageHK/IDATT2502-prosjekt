@@ -105,7 +105,7 @@ if __name__ == "__main__":
             memory.extend(trainer.train(num_games=games, memory=memory))
         except KeyboardInterrupt:
             print("\nSaving model")
-            trainer.save_model_and_optimizer(filename)
+            trainer.save_model(filename)
             print("Saving games")
             trainer.save_games(memory, filename_games)
             print("Saving loss values")
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         
         if training_iterations % 10 == 0:
             print("\nSaving model, games and loss values")
-            trainer.save_model_and_optimizer(filename)
+            trainer.save_model(filename)
             trainer.save_games(memory, filename_games)
             trainer.model.save_loss_values_to_file(filename_loss_values)
         
