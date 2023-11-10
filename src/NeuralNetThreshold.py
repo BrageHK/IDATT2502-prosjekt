@@ -9,11 +9,12 @@ class NeuralNetThreshold(nn.Module):
         # Predicts probability for the expected outcomes (win current player, draw, win other player)
         # If one of the values in the array is over the threshold - stop simulation, else continue simulation
         self.value_network = nn.Sequential(
-            nn.Conv2d(object_dim, hidden_dim, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.Conv2d(object_dim, hidden_dim, kernel_size=3, padding=1),
             nn.BatchNorm2d(hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(hidden_dim, outcome_dim, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(outcome_dim)
+            nn.Sigmoid(),
+            nn.Flatten(),
+            nn.Linear(hidden_dim * 42, outcome_dim),
+            nn.Sigmoid()
         )
         
     def forward(self, x):
