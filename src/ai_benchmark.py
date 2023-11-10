@@ -40,7 +40,6 @@ def notify_benchmark_finished():
     except Exception as e:
         logging.error(f"Failed to send notification: {e}")
 
-
 def play_game(env, mcts1, mcts2, match_id, name1, name2):
     logging.info(f'Starting match {match_id} between {name1} and {name2}')
     state = env.get_initial_state()
