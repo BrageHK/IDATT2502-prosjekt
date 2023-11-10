@@ -1,3 +1,5 @@
+import torch.multiprocessing as mp
+
 from MCTS.MCTS import MCTS
 from Connect_four_env import ConnectFour
 from collections import deque
@@ -8,8 +10,7 @@ from Node.NodeType import NodeType
 import pickle
 import numpy as np
 import torch
-
-from multiprocessing import Pool, cpu_count
+import os
 
 def play_game(env, mcts, match_id):
         print(f'Starting match {match_id}')
@@ -52,12 +53,13 @@ class Trainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         print("Starting training using: ", "cuda" if torch.cuda.is_available() else "cpu")
+        print("Cores used for training: ", mp.cpu_count())
         
     def save_model(self, filename):
         torch.save(self.model.state_dict(), filename)
         
     def load_model(self, path):
-        self.model.load_state_dict(torch.load(path), map_location=self.device)
+        self.model.load_state_dict(torch.load(path))
 
     def train(self, num_games, memory):
         self.model.eval()
@@ -69,13 +71,15 @@ class Trainer:
         #     print("Started game: ", i)
         #     memory.extend(self.play_game())@
         
+        mp.set_start_method('spawn', force=True)
+
         match_id = 1
         args_list = []
         for _ in range(num_games):
             args_list.append((self.env, self.mcts, match_id))
             match_id += 1
-            
-        with Pool(cpu_count()) as pool:
+        
+        with mp.Pool(mp.cpu_count()) as pool:
             result_list = pool.starmap(play_game, args_list)
         
         memory.extend(result_list[0])
@@ -123,17 +127,22 @@ if __name__ == "__main__":
     trainer = Trainer(env = ConnectFour())
 
     training_iterations = 0
-    games = 5 # 48 threads * 5 games per thread => play 240 games per iteration
+    games = mp.cpu_count()
     memory = deque(maxlen=50_000)
     
     folder = "data/test/"
+    
+    if not os.path.exists(folder):
+        # Create the folder
+        os.makedirs(folder)
+        print(f"Folder created: {folder}")
     
     filename = folder+"model.pt"
     filename_games = folder+"games.pk1"
     filename_loss_values = folder+"loss_values.pk1"
         
-    load_data = False
-    if load_data:
+    load_all = False
+    if load_all:
         memory = load_data(filename, filename_games, filename_loss_values, trainer)
         
     def save_all():
@@ -152,7 +161,6 @@ if __name__ == "__main__":
             save_all()
             break
         
-        if training_iterations % 2 == 0:
-            save_all()
+        save_all()
         
         training_iterations += 1

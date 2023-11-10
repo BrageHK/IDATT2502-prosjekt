@@ -77,16 +77,18 @@ class AlphaPredictorNerualNet(nn.Module):
         self.value_loss_history.append(value_loss.item())
         return policy_loss + value_loss
             
-    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=64): # TODO: Change barch size to 64
+    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=128): # TODO: Change barch size to 64
         
         if len(memory) < batch_size:
+            print("Not enough data in memory, using all data. Memory length: ", len(memory))
             batch_size = len(memory)
             
         if model.optimizer is None:
             model.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
         
         for i in range(epoch):
-            print("Starting epoch: ", i)
+            
+            print("Starting epoch: ", i+1)
             batch = random.sample(memory, batch_size)
             
             states, policy_targets, value_targets = zip(*batch)
