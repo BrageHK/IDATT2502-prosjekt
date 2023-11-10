@@ -12,8 +12,7 @@ import torch
 from multiprocessing import Pool, cpu_count
 
 def play_game(env, mcts, match_id):
-        # if match_id % 30 == 0:
-        #     print(f'Starting match {match_id}')
+        print(f'Starting match {match_id}')
 
         memory = []
         player = 1
@@ -45,17 +44,15 @@ def play_game(env, mcts, match_id):
         return return_memory
 
 class Trainer:
-    def __init__(self, env=ConnectFour(), num_iterations=1_000, model=AlphaPredictorNerualNet(4)): # TODO: change iterations to 1200
+    def __init__(self, env=ConnectFour(), num_iterations=1_000, model=AlphaPredictorNerualNet(4)): # TODO: change iterations to 1000
         
         self.model = model
         self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_NN, model=model)
         self.env = env
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if self.device == "cuda":
-            print("Starting training using GPU")
-        else:
-            print("Starting training using CPU")
-    
+
+        print("Starting training using: ", "cuda" if torch.cuda.is_available() else "cpu")
+        
     def save_model(self, filename):
         torch.save(self.model.state_dict(), filename)
         
@@ -126,7 +123,7 @@ if __name__ == "__main__":
     trainer = Trainer(env = ConnectFour())
 
     training_iterations = 0
-    games = 240 # 48 threads * 5 games per thread => play 240 games per iteration
+    games = 5 # 48 threads * 5 games per thread => play 240 games per iteration
     memory = deque(maxlen=50_000)
     
     folder = "data/test/"
@@ -155,8 +152,7 @@ if __name__ == "__main__":
             save_all()
             break
         
-        if training_iterations % 3 == 0:
+        if training_iterations % 2 == 0:
             save_all()
         
         training_iterations += 1
-    

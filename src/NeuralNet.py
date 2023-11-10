@@ -76,11 +76,11 @@ class AlphaPredictorNerualNet(nn.Module):
         self.policy_loss_history.append(policy_loss.item())
         self.value_loss_history.append(value_loss.item())
         return policy_loss + value_loss
-    
             
-    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=1): # TODO: Change barch size to 64
+    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=64): # TODO: Change barch size to 64
+        
         if len(memory) < batch_size:
-            raise ValueError("Not enough samples in memory to form a batch.")
+            batch_size = len(memory)
             
         if model.optimizer is None:
             model.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
