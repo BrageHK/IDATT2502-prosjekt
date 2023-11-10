@@ -1,27 +1,29 @@
 {
     "Results": {
-        "('random', 'smart')": {
-            "smart": {
-                "Wins": 2,
-                "Losses": 0,
-                "Draws": 0,
-                "TotalTime": 0.026568174362182617,
-                "TotalActions": 8,
-                "GamesPlayed": 2,
-                "AvgTimePerMatch": 0.013284087181091309,
-                "AvgActionsPerMatch": 4.0,
-                "AvgTimePerAction": 0.003321021795272827
+        "('normalized 1 sec', 'single 1 sec')": {
+            "single 1 sec": {
+                "Wins": 5468,
+                "Losses": 4068,
+                "Draws": 464,
+                "TotalTime": 152481.84507083893,
+                "TotalActions": 152210,
+                "GamesPlayed": 10000,
+                "FirstPlayerWins": 2860,
+                "AvgTimePerMatch": 15.248184507083893,
+                "AvgActionsPerMatch": 15.221,
+                "AvgTimePerAction": 1.0017859869314691
             },
-            "random": {
-                "Wins": 0,
-                "Losses": 2,
-                "Draws": 0,
-                "TotalTime": 0.00010967254638671875,
-                "TotalActions": 7,
-                "GamesPlayed": 2,
-                "AvgTimePerMatch": 5.4836273193359375e-05,
-                "AvgActionsPerMatch": 3.5,
-                "AvgTimePerAction": 1.5667506626674106e-05
+            "normalized 1 sec": {
+                "Wins": 4068,
+                "Losses": 5468,
+                "Draws": 464,
+                "TotalTime": 151787.1378030777,
+                "TotalActions": 151504,
+                "GamesPlayed": 10000,
+                "FirstPlayerWins": 2154,
+                "AvgTimePerMatch": 15.17871378030777,
+                "AvgActionsPerMatch": 15.1504,
+                "AvgTimePerAction": 1.0018688470474555
             }
         }
     }
