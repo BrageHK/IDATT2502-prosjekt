@@ -21,7 +21,7 @@ class MCTS:
         elif self.NODE_TYPE == NodeType.NODE_NORMALIZED:
             return NodeNormalized(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_NN:
-            return NodeNN(self.env, state)
+            return NodeNN(self.env, state, model=self.model)
         elif self.NODE_TYPE == NodeType.NODE_THRESHOLD:
             return NodeThreshold(self.env, state)
         else:

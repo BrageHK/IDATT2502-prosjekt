@@ -3,7 +3,7 @@ from NeuralNet import AlphaPredictorNerualNet
 import torch
 
 class NodeNN:
-    def __init__(self, env, state, parent=None, action_taken=None, priority=0, model=AlphaPredictorNerualNet(4), device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
+    def __init__(self, env, state, parent=None, action_taken=None, priority=0, model=None, device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         if not env.check_state_format(state):
             print("ERROR: In state format Node constructor")
         

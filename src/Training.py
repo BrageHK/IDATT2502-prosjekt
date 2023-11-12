@@ -84,7 +84,12 @@ class Trainer:
         with mp.Pool(mp.cpu_count()) as pool:
             result_list = pool.starmap(play_game, args_list)
         
-        memory.extend(result_list[0])
+        for i in range(len(result_list)):
+            memory.extend(result_list[i])
+        print("memory length: ", len(memory))
+        #print(memory)
+        print("result list length: ", len(result_list))
+        #print(result_list)
         
         #memory.extend(play_game(self.env, self.mcts, 1))
         
