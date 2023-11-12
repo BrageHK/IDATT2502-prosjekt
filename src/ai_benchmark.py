@@ -3,11 +3,18 @@ import logging
 from Connect_four_env import ConnectFour
 from MCTS.MCTS import MCTS
 from Node.NodeType import NodeType
+from NeuralNet import AlphaPredictorNerualNet
 import json
 import numpy as np
 import random
+import torch
+
 
 import torch.multiprocessing as mp
+mp.set_start_method('spawn', force=True)
+
+
+
 
 from plyer import notification
 
@@ -44,6 +51,7 @@ def play_game(env, mcts1, mcts2, match_id, name1, name2):
     logging.info(f'Starting match {match_id} between {name1} and {name2}')
     state = env.get_initial_state()
     time_stats = {name1: 0, name2: 0}
+    time_per_action = {name1: [], name2: []}  # Initialize dictionary to store time per action
     actions_stats = {name1: 0, name2: 0}
     players = {1: (mcts1, name1),
                 -1: (mcts2, name2)}
@@ -60,8 +68,10 @@ def play_game(env, mcts1, mcts2, match_id, name1, name2):
             start_time = time.time()
             action = mcts.search(neutral_state)
             #mcts_probs = mcts.search(neutral_state)
-            time_stats[player_name] += time.time() - start_time
+            action_time = time.time() - start_time
+            time_stats[player_name] += action_time
             #action = np.argmax(mcts_probs)
+            time_per_action[player_name].append(action_time)  # Record time for this action
             actions_stats[player_name] += 1
             #print(f"Player {player_name} chose action {action}")
             turn += 1
@@ -86,7 +96,7 @@ def play_game(env, mcts1, mcts2, match_id, name1, name2):
         logging.info(f'Match {match_id} finished. Player {winner} won. Winner: {players[winner][1]}')
     
     
-    return winner, time_stats, actions_stats, match_id, name1, name2
+    return winner, time_stats, actions_stats, time_per_action, match_id, name1, name2
 
 
 def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
@@ -107,7 +117,7 @@ def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
         results_list = pool.starmap(play_game, args_list)
 
     for result in results_list:
-        winner, game_time_stats, game_actions_stats, match_id, name1, name2 = result
+        winner, game_time_stats, game_actions_stats, game_time_per_action, match_id, name1, name2 = result
         matchup = tuple(sorted([name1, name2]))
         matchup_str = str(matchup)
         if matchup_str not in results:
@@ -115,20 +125,22 @@ def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
                 name1: {
                     "Wins": 0, "Losses": 0, "Draws": 0, 
                     "TotalTime": 0, "TotalActions": 0, 
-                    "GamesPlayed": 0, "FirstPlayerWins": 0  # Added "FirstPlayerWins" here
+                    "GamesPlayed": 0, "FirstPlayerWins": 0,
+                    "TimePerAction": []  # Added "FirstPlayerWins" here
                 },
                 name2: {
                     "Wins": 0, "Losses": 0, "Draws": 0, 
                     "TotalTime": 0, "TotalActions": 0, 
-                    "GamesPlayed": 0, "FirstPlayerWins": 0  # And here
+                    "GamesPlayed": 0, "FirstPlayerWins": 0,
+                    "TimePerAction": []  # And here
                 }
             }
 
         results = update_stats(
-            results,
-            name1, name2, winner, 
-            game_time_stats, game_actions_stats, 
-            matchup_str  # Pass the string version of the matchup
+            results, name1, name2, winner, 
+            game_time_stats, game_actions_stats, game_time_per_action,
+            match_id,
+            matchup_str
         )
 
     notify_benchmark_finished()
@@ -136,7 +148,7 @@ def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
 
 
 
-def update_stats(results, name1, name2, winner, game_time_stats, game_actions_stats, matchup):
+def update_stats(results, name1, name2, winner, game_time_stats, game_actions_stats, game_time_per_action, match_id, matchup):
     matchup_str = str(matchup)
     # Ensure the matchup entry exists with all necessary sub-structures
     if matchup_str not in results:
@@ -144,12 +156,14 @@ def update_stats(results, name1, name2, winner, game_time_stats, game_actions_st
             name1: {
                 "Wins": 0, "Losses": 0, "Draws": 0, 
                 "TotalTime": 0, "TotalActions": 0, 
-                "GamesPlayed": 0, "FirstPlayerWins": 0  # Added "FirstPlayerWins" here
+                "GamesPlayed": 0, "FirstPlayerWins": 0,
+                "TimePerAction": []  # Added "FirstPlayerWins" here
             },
             name2: {
                 "Wins": 0, "Losses": 0, "Draws": 0, 
                 "TotalTime": 0, "TotalActions": 0, 
-                "GamesPlayed": 0, "FirstPlayerWins": 0  # And here
+                "GamesPlayed": 0, "FirstPlayerWins": 0,
+                "TimePerAction": []  # And here
             }
         }
 
@@ -170,6 +184,12 @@ def update_stats(results, name1, name2, winner, game_time_stats, game_actions_st
         results[matchup_str][name]["TotalTime"] += game_time_stats[name]
         results[matchup_str][name]["TotalActions"] += game_actions_stats[name]
         results[matchup_str][name]["GamesPlayed"] += 1
+        if len(results[matchup_str][name]["TimePerAction"]) < match_id:
+            results[matchup_str][name]["TimePerAction"].append([])
+
+        # Append time data for the current match
+        results[matchup_str][name]["TimePerAction"][match_id - 1].extend(game_time_per_action[name])
+
 
     # Calculate averages
     for name in [name1, name2]:
@@ -192,11 +212,14 @@ class Randomf():
 
 if __name__ == "__main__":
     env = ConnectFour()
+    model=AlphaPredictorNerualNet(4)
+    model.load_state_dict(torch.load("data/test/model.pt"))
     mcts_versions = {
-    "genious normalized": MCTS(env, num_iterations=10_000, NODE_TYPE=NodeType.NODE_NORMALIZED), # "genious
-    "genious ": MCTS(env, num_iterations=10_000, NODE_TYPE=NodeType.NODE), # "genious
-    "Basic MCTS ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE),
-    "Basic normalized ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE_NORMALIZED),
+    #"nn": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 1000),
+    "genious ": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 20000), # "genious
+    "genious 2": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 20000)
+    #"Basic MCTS ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE),
+    #"Basic normalized ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE_NORMALIZED),
     #"dumbass": MCTS(n_simulations=10_000),
     #"smart" :MCTS(env=ConnectFour() ,num_iterations= 20000),
 

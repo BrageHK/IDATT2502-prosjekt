@@ -154,7 +154,7 @@ if __name__ == "__main__":
     filename_games = folder+"games.pk1"
     filename_loss_values = folder+"loss_values.pk1"
         
-    load_all = False
+    load_all = True
     if load_all:
         memory = load_data(filename, filename_games, filename_loss_values, trainer)
         

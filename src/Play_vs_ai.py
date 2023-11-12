@@ -6,6 +6,7 @@ from Connect_four_env import ConnectFour
 
 from MCTS.MCTS import MCTS
 from Node.NodeType import NodeType
+from NeuralNet import AlphaPredictorNerualNet
 
 class ConnectFourTerminal:
 
@@ -129,6 +130,8 @@ class ConnectFourTerminal:
 
 if __name__ == "__main__":
     #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)
-    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE_NN, model=torch.load("data/test/model.pt"), turn_time=2)
+    model=AlphaPredictorNerualNet(4)
+    model.load_state_dict(torch.load("data/test/model.pt"))
+    opponent_algorithm = MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, turn_time=10)
 
     curses.wrapper(lambda stdscr: ConnectFourTerminal.initialize_terminal(stdscr, opponent_algorithm))
