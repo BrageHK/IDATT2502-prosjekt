@@ -73,23 +73,26 @@ class AlphaPredictorNerualNet(nn.Module):
     def loss(self, policy_logits, value_logits, policy_target, value_target): #
         policy_loss = nn.CrossEntropyLoss()(policy_logits, policy_target)
         value_loss = nn.MSELoss()(value_logits, value_target)
-        self.policy_loss_history.append(policy_loss.item())
         self.value_loss_history.append(value_loss.item())
+        self.policy_loss_history.append(policy_loss.item())
         return policy_loss + value_loss
             
-    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=128): # TODO: Change barch size to 64
-        
+    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=64):
+
         if len(memory) < batch_size:
             print("Not enough data in memory, using all data. Memory length: ", len(memory))
             return
             
         if model.optimizer is None:
             model.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-        
+             
         for i in range(epoch):
-            
-            print("Starting epoch: ", i+1)
+            if i+1 % 10 == 0:
+                print("Starting epoch: ", i+1)
+                
             batch = random.sample(memory, batch_size)
+            
+            # Variables to accumulate losses over the epoch
             
             states, policy_targets, value_targets = zip(*batch)
             
@@ -104,9 +107,12 @@ class AlphaPredictorNerualNet(nn.Module):
             policy_output, value_output = model(states)
             
             loss = model.loss(policy_output, value_output, policy_targets, value_targets.squeeze(-1))
+
             loss.backward()
             model.optimizer.step()
             model.optimizer.zero_grad()
+
+            # Calculate average loss for the epoch and append to history
     
     # Takes in a state and uses the neuron network to get a policy and a value
     def forward(self, x):

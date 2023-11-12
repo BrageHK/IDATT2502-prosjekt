@@ -6,6 +6,7 @@ from Connect_four_env import ConnectFour
 
 from MCTS.MCTS import MCTS
 from Node.NodeType import NodeType
+
 from NeuralNet import AlphaPredictorNerualNet
 
 class ConnectFourTerminal:

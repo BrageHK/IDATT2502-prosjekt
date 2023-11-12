@@ -36,12 +36,12 @@ def play_game(env, mcts, match_id):
             player = env.get_opponent(player)
             
             turn += 1
-            
+        
+        player = env.get_opponent(player)
         return_memory = []
         for historical_state, historical_mcts_prob, historical_player in memory:
-            if historical_player == player: # player because the while loop has switch the player
-                reward = env.get_opponent_value(reward)
-            return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, reward))
+            historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
+            return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
         return return_memory
 
 class Trainer:
@@ -86,14 +86,6 @@ class Trainer:
         
         for i in range(len(result_list)):
             memory.extend(result_list[i])
-        print("memory length: ", len(memory))
-        #print(memory)
-        print("result list length: ", len(result_list))
-        #print(result_list)
-        
-        #memory.extend(play_game(self.env, self.mcts, 1))
-        
-        
             
         # Trains the model on the data in memory
         print("Training model")
@@ -141,7 +133,7 @@ if __name__ == "__main__":
 
     training_iterations = 0
     games = mp.cpu_count()
-    memory = deque(maxlen=50_000)
+    memory = deque(maxlen=500_000)
     
     folder = "data/test/"
     
@@ -166,7 +158,7 @@ if __name__ == "__main__":
         print("Saved!")
         pass
     
-    while True:
+    while training_iterations < 10:
         print("Training iteration: ", training_iterations)
         try:
             memory.extend(trainer.train(num_games=games, memory=memory))

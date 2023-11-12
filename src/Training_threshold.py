@@ -8,9 +8,12 @@ from NeuralNetThreshold import NeuralNetThreshold
 from Node.NodeType import NodeType
 
 import pickle
+import os
+
+import torch.multiprocessing as mp
 
 class TrainerThreshold:
-    def __init__(self, env=ConnectFour(), num_iterations=20_000, model=NeuralNetThreshold()):
+    def __init__(self, env=ConnectFour(), num_iterations=10_000, model=NeuralNetThreshold()):
         self.model = model
         self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_THRESHOLD, model=model)
         self.env = env
@@ -62,11 +65,11 @@ class TrainerThreshold:
             state, reward, done = self.env.step(state, action=action, player=1) # TODO: can be the cause of the bug, why is not player involved here? Compare this..
             player = self.env.get_opponent(player)
             
+        player = self.env.get_opponent(player)
         return_memory = []
         for historical_state, historical_player in memory:
-            if historical_player == player: # player because the while loop has switch the player
-                reward = self.env.get_opponent_value(reward)
-            return_memory.append((self.env.get_encoded_state(historical_state), self.reward_tuple(reward)))
+            historical_outcome = reward if historical_player == player else self.env.get_opponent_value(reward)
+            return_memory.append((self.env.get_encoded_state(historical_state), historical_outcome))
         return return_memory
     
     def save_games(self, memory, filename):
@@ -77,17 +80,21 @@ class TrainerThreshold:
         with open(filename, "rb") as file:
             return pickle.load(file)
 
-
-            
 if __name__ == "__main__":
     trainer = TrainerThreshold(env = ConnectFour())
 
     training_iterations = 0
-    games = 25
+    games = mp.cpu_count()
     memory = deque(maxlen=500_000)
-    filename = "data/threshold/model.pt"
-    filename_games = "data/threshold/games.pk1"
-    filename_loss_values = "data/threshold/loss_values.pk1"
+    folder = "data/threshold/"
+    filename = folder+"model.pt"
+    filename_games = folder+"games.pk1"
+    filename_loss_values = folder+"loss_values.pk1"
+    
+    if not os.path.exists(folder):
+        # Create the folder
+        os.makedirs(folder)
+        print(f"Folder created: {folder}")
 
     try:
         trainer.load_model(filename)
