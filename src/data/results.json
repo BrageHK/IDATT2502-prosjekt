@@ -1,0 +1,28 @@
+{
+    "Results": {
+        "('random', 'smart')": {
+            "smart": {
+                "Wins": 2,
+                "Losses": 0,
+                "Draws": 0,
+                "TotalTime": 0.026568174362182617,
+                "TotalActions": 8,
+                "GamesPlayed": 2,
+                "AvgTimePerMatch": 0.013284087181091309,
+                "AvgActionsPerMatch": 4.0,
+                "AvgTimePerAction": 0.003321021795272827
+            },
+            "random": {
+                "Wins": 0,
+                "Losses": 2,
+                "Draws": 0,
+                "TotalTime": 0.00010967254638671875,
+                "TotalActions": 7,
+                "GamesPlayed": 2,
+                "AvgTimePerMatch": 5.4836273193359375e-05,
+                "AvgActionsPerMatch": 3.5,
+                "AvgTimePerAction": 1.5667506626674106e-05
+            }
+        }
+    }
+}
