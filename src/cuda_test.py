@@ -2,7 +2,7 @@ import torch
 
 import torch.multiprocessing as mp
 
-print("Is cuda availible? ", torch.cuda.is_available())
+
 
 def test(match_id):
     print("Test no: ", match_id)
@@ -10,6 +10,7 @@ def test(match_id):
 
 if __name__ == "__main__":
     
+    print("Is cuda availible? ", torch.cuda.is_available())
     mp.set_start_method('spawn', force=True)
 
     result_list = []
@@ -22,4 +23,4 @@ if __name__ == "__main__":
         
     print(result_list)
     
-    
+    print(torch.__version__)

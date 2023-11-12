@@ -129,6 +129,6 @@ class ConnectFourTerminal:
 
 if __name__ == "__main__":
     #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)
-    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE_NORMALIZED, model=torch.load("data/test/model.pt"), turn_time=2)
+    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE_NN, model=torch.load("data/test/model.pt"), turn_time=2)
 
     curses.wrapper(lambda stdscr: ConnectFourTerminal.initialize_terminal(stdscr, opponent_algorithm))

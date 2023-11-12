@@ -81,7 +81,7 @@ class AlphaPredictorNerualNet(nn.Module):
         
         if len(memory) < batch_size:
             print("Not enough data in memory, using all data. Memory length: ", len(memory))
-            batch_size = len(memory)
+            return
             
         if model.optimizer is None:
             model.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)

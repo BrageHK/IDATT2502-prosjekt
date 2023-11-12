@@ -62,6 +62,7 @@ class Trainer:
         self.model.load_state_dict(torch.load(path))
 
     def train(self, num_games, memory):
+        print("self.model.eval()")
         self.model.eval()
         
         # Plays num_games against itself and stores the data in memory
@@ -78,11 +79,16 @@ class Trainer:
         for _ in range(num_games):
             args_list.append((self.env, self.mcts, match_id))
             match_id += 1
-        
+        #mp.cpu_count()
+        # 1 core for debug
         with mp.Pool(mp.cpu_count()) as pool:
             result_list = pool.starmap(play_game, args_list)
         
         memory.extend(result_list[0])
+        
+        #memory.extend(play_game(self.env, self.mcts, 1))
+        
+        
             
         # Trains the model on the data in memory
         print("Training model")
@@ -123,6 +129,8 @@ def load_data(filename, filename_games, filename_loss_values, trainer):
     return memory
 
 if __name__ == "__main__":
+    
+    print("Starting training file")
     
     trainer = Trainer(env = ConnectFour())
 
