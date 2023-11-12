@@ -7,7 +7,7 @@ import json
 import numpy as np
 import random
 
-from multiprocessing import Pool, cpu_count
+import torch.multiprocessing as mp
 
 from plyer import notification
 
@@ -103,7 +103,7 @@ def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
                     match_id += 1
 
     #with Pool(1) as pool:
-    with Pool(cpu_count()) as pool:
+    with mp.Pool(mp.cpu_count()) as pool:
         results_list = pool.starmap(play_game, args_list)
 
     for result in results_list:

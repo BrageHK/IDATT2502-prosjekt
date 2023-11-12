@@ -52,7 +52,7 @@ class NodeNN:
         policy, value = self.nn_model.forward(tensor_state)
         
         # print("Policy before:\n ", policy)
-        policy = torch.softmax(policy, axis = 1).squeeze(0).detach().numpy()
+        policy = torch.softmax(policy, axis = 1).squeeze(0).detach().cpu().numpy()
         policy *= self.env.get_legal_moves_bool_array(self.state)
         sum = np.sum(policy)
         policy /= sum
