@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import random
 import numpy as np
+import pickle
 
 class NeuralNetThreshold(nn.Module):
     def __init__(self, object_dim=3, hidden_dim=100, outcome_dim=3):
@@ -17,6 +18,10 @@ class NeuralNetThreshold(nn.Module):
             nn.Sigmoid()
         )
         
+        self.value_loss_history = []
+        
+        
+        
     def forward(self, x):
         return self.value_network(x)
     
@@ -26,8 +31,14 @@ class NeuralNetThreshold(nn.Module):
     def load_model(self, path):
         self.load_state_dict(torch.load(path))
         
+    def save_loss_values_to_file(self, path):
+        with open(path, "wb") as f:
+            pickle.dump(self.value_loss_history, f)
+        
     def loss(self, value, expected_value):
-        return nn.MSELoss()(value, expected_value)
+        value_loss = nn.MSELoss()(value, expected_value)
+        self.value_loss_history.append(value_loss.item())
+        return value_loss
     
     def optimize(self, model, memory, epoch=20, learning_rate=0.001, batch_size=64):
         if self.optimizer == None:
