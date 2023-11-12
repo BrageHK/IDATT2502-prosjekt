@@ -66,7 +66,6 @@ class AlphaPredictorNerualNet(nn.Module):
         self.to(self.device)
         
     def save_loss_values_to_file(self, filename):
-        
         with open(filename, "wb") as file:
             pickle.dump((self.policy_loss_history, self.value_loss_history), file)
 
@@ -74,9 +73,11 @@ class AlphaPredictorNerualNet(nn.Module):
     def loss(self, policy_logits, value_logits, policy_target, value_target): #
         policy_loss = nn.CrossEntropyLoss()(policy_logits, policy_target)
         value_loss = nn.MSELoss()(value_logits, value_target)
+        self.value_loss_history.append(value_loss.item())
+        self.policy_loss_history.append(policy_loss.item())
         return policy_loss + value_loss
             
-    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=128):
+    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=64):
 
         if len(memory) < batch_size:
             print("Not enough data in memory, using all data. Memory length: ", len(memory))
@@ -84,9 +85,7 @@ class AlphaPredictorNerualNet(nn.Module):
             
         if model.optimizer is None:
             model.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-        
-        total_policy_loss = 0
-        total_value_loss = 0        
+             
         for i in range(epoch):
             if i+1 % 10 == 0:
                 print("Starting epoch: ", i+1)
@@ -108,21 +107,12 @@ class AlphaPredictorNerualNet(nn.Module):
             policy_output, value_output = model(states)
             
             loss = model.loss(policy_output, value_output, policy_targets, value_targets.squeeze(-1))
-            
-            # Accumulate losses
-            total_policy_loss += loss.item()  # Assuming 'loss' includes both policy and value loss
-            total_value_loss += loss.item()
 
             loss.backward()
             model.optimizer.step()
             model.optimizer.zero_grad()
 
             # Calculate average loss for the epoch and append to history
-            
-        average_policy_loss = total_policy_loss / batch_size
-        average_value_loss = total_value_loss / batch_size
-        self.policy_loss_history.append(average_policy_loss)
-        self.value_loss_history.append(average_value_loss)
     
     # Takes in a state and uses the neuron network to get a policy and a value
     def forward(self, x):
