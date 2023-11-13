@@ -1,0 +1,76 @@
+import json
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+
+# Load data from JSON file
+with open('data/results.json', 'r') as file:
+    data = json.load(file)
+
+# Set up the figure and axes
+fig, ax = plt.subplots(figsize=(14, 8))
+
+# Initialize lists to hold the data
+matchup_names = []
+player1_wins_list = []
+player2_wins_list = []
+draws_list = []
+total_games_list = []
+
+# Collect data from each matchup
+for matchup_name, matchup_data in data["Results"].items():
+    players = list(matchup_data.keys())
+    player1_wins = matchup_data[players[0]]["Wins"]
+    player2_wins = matchup_data[players[1]]["Wins"]
+    draws = matchup_data[players[0]]["Draws"]  # Assuming draws are the same for both
+    total_games = player1_wins + player2_wins + draws
+    total_games_list.append(total_games)
+    player1_wins_list.append(player1_wins)
+    player2_wins_list.append(player2_wins)
+    draws_list.append(draws)
+    matchup_names.append(matchup_name)
+
+# The x position of bars for each matchup
+x = np.arange(len(matchup_names))  # Array from 0 to number of matchups - 1
+width = 0.30  # Width of the bars
+
+# Draw bars for each matchup
+rects1 = ax.bar(x - width, player1_wins_list, width, label='Player 1 Wins', color='green')
+rects2 = ax.bar(x, player2_wins_list, width, label='Player 2 Wins', color='red')
+rects3 = ax.bar(x + width, draws_list, width, label='Draws', color='blue')
+
+# Adding labels, title, and custom x-axis tick labels
+ax.set_ylabel('Matches')
+ax.set_title('Matchup Results')
+ax.set_xticks(x)
+ax.set_xticklabels(matchup_names, rotation=45, ha='right')
+ax.legend()
+
+# Function to add value labels above the bars
+def add_value_labels(ax, rects, total_games):
+    for rect, total in zip(rects, total_games):
+        height = rect.get_height()
+        percentage = f'({height/total:.1%})' if total > 0 else '(0%)'
+        label = f'{height} {percentage}'
+        ax.annotate(label,
+                    xy=(rect.get_x() + rect.get_width() / 2, height),
+                    xytext=(0, 3),  # 3 points vertical offset
+                    textcoords="offset points",
+                    ha='center', va='bottom')
+
+# Call the function to add labels to the bars
+add_value_labels(ax, rects1, total_games_list)  # Add labels for Player 1 wins
+add_value_labels(ax, rects2, total_games_list)  # Add labels for Player 2 wins
+add_value_labels(ax, rects3, total_games_list)  # Add labels for Draws
+
+# Adjust the layout
+plt.tight_layout()
+
+# Save the plot as SVG
+plt.savefig('plots/overall_matchup_results.svg', format='svg')
+
+# Show the plot
+plt.show()
+
+# Close the plot to avoid memory leaks
+plt.close()

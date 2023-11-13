@@ -184,11 +184,8 @@ def update_stats(results, name1, name2, winner, game_time_stats, game_actions_st
         results[matchup_str][name]["TotalTime"] += game_time_stats[name]
         results[matchup_str][name]["TotalActions"] += game_actions_stats[name]
         results[matchup_str][name]["GamesPlayed"] += 1
-        if len(results[matchup_str][name]["TimePerAction"]) < match_id:
-            results[matchup_str][name]["TimePerAction"].append([])
-
         # Append time data for the current match
-        #results[matchup_str][name]["TimePerAction"][match_id - 1].extend(game_time_per_action[name])
+        results[matchup_str][name]["TimePerAction"].append(game_time_per_action[name])
 
 
     # Calculate averages
@@ -216,11 +213,13 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load("data/test/model.pt"))
     mcts_versions = {
     #"nn": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 1000),
-    "genious 1": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 2000), # "genious
-    "genious 2": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 1000),
-    "genious 3": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 500), # "genious
-    "genious 4": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 250), # "genious
-
+    #"genious 1": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 2000), # "genious
+    #"genious 2": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 1000),
+    #"genious 3": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 500), # "genious
+    #"genious 4": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 250), # "genious
+    "single ": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 10),
+    "nn": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 10),
+    "nn2": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 10),
 
     #"Basic MCTS ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE),
     #"Basic normalized ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE_NORMALIZED),
