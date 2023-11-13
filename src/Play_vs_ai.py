@@ -133,6 +133,6 @@ if __name__ == "__main__":
     #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)
     model=AlphaPredictorNerualNet(4)
     model.load_state_dict(torch.load("data/test/model.pt"))
-    opponent_algorithm = MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, turn_time=10)
+    opponent_algorithm = MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, turn_time=5)
 
     curses.wrapper(lambda stdscr: ConnectFourTerminal.initialize_terminal(stdscr, opponent_algorithm))

@@ -158,7 +158,7 @@ if __name__ == "__main__":
         print("Saved!")
         pass
     
-    while training_iterations < 10:
+    while True:
         print("Training iteration: ", training_iterations)
         try:
             memory.extend(trainer.train(num_games=games, memory=memory))
