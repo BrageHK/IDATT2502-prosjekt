@@ -6,6 +6,7 @@ from collections import deque
 
 from NeuralNet import AlphaPredictorNerualNet
 from Node.NodeType import NodeType
+from board_printer import BoardPrinter
 
 import pickle
 import numpy as np
@@ -22,17 +23,17 @@ def play_game(env, mcts, match_id):
         turn = 0
         
         while not done:
-            state = env.change_perspective(state, player)
-            mcts_prob, action = mcts.search(state, training=True) 
+            neutral_state = env.change_perspective(state, player)
+            mcts_prob, action = mcts.search(neutral_state, training=True) 
 
-            memory.append((state, mcts_prob, player))
+            memory.append((neutral_state, mcts_prob, player))
 
             if turn < 16: # Higher exploration in the first 10 moves
                 mcts_prob = np.power(mcts_prob, 1/1.5)
                 mcts_prob = mcts_prob / np.sum(mcts_prob)
             action = np.random.choice(env.action_space, p=mcts_prob)
             
-            state, reward, done = env.step(state, action=action, player=1)
+            state, reward, done = env.step(state, action=action, player=player)
             player = env.get_opponent(player)
             
             turn += 1
@@ -87,6 +88,8 @@ class Trainer:
         for i in range(len(result_list)):
             memory.extend(result_list[i])
             
+        BoardPrinter.memory_debugger(result_list[0])
+            
         # Trains the model on the data in memory
         print("Training model")
         self.model.train() # Sets training mode
@@ -109,7 +112,7 @@ class Trainer:
 
 
 def load_data(filename, filename_games, filename_loss_values, trainer):
-    memory = deque(maxlen=50_000)
+    memory = deque(maxlen=500_000)
     try:
         trainer.load_model(filename)
     except FileNotFoundError:
@@ -158,7 +161,7 @@ if __name__ == "__main__":
         print("Saved!")
         pass
     
-    while training_iterations < 10:
+    while training_iterations < 1:
         print("Training iteration: ", training_iterations)
         try:
             memory.extend(trainer.train(num_games=games, memory=memory))
