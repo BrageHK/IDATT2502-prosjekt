@@ -18,11 +18,10 @@ def play_game(env, mcts, match_id):
 
         memory = []
         player = 1
-        done = False
         state = env.get_initial_state()
         turn = 0
         
-        while not done:
+        while True:
             neutral_state = env.change_perspective(state, player)
             mcts_prob, action = mcts.search(neutral_state, training=True) 
 
@@ -34,16 +33,21 @@ def play_game(env, mcts, match_id):
             action = np.random.choice(env.action_space, p=mcts_prob)
             
             state, reward, done = env.step(state, action=action, player=player)
-            player = env.get_opponent(player)
+           
             
             turn += 1
+
+            if done:
+                player = env.get_opponent(player)
+                return_memory = []
+                for historical_state, historical_mcts_prob, historical_player in memory:
+                    historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
+                    return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
+                return return_memory
+            player = env.get_opponent(player)
+                        
         
-        player = env.get_opponent(player)
-        return_memory = []
-        for historical_state, historical_mcts_prob, historical_player in memory:
-            historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
-            return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
-        return return_memory
+        
 
 class Trainer:
     def __init__(self, env=ConnectFour(), num_iterations=1_000, model=AlphaPredictorNerualNet(4)): # TODO: change iterations to 1000
