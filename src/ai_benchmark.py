@@ -120,21 +120,6 @@ def benchmark_mcts( mcts_versions, env=ConnectFour(), num_games=20):
         winner, game_time_stats, game_actions_stats, game_time_per_action, match_id, name1, name2 = result
         matchup = tuple(sorted([name1, name2]))
         matchup_str = str(matchup)
-        if matchup_str not in results:
-            results[matchup_str] = {
-                name1: {
-                    "Wins": 0, "Losses": 0, "Draws": 0, 
-                    "TotalTime": 0, "TotalActions": 0, 
-                    "GamesPlayed": 0, "FirstPlayerWins": 0,
-                    "TimePerAction": []  # Added "FirstPlayerWins" here
-                },
-                name2: {
-                    "Wins": 0, "Losses": 0, "Draws": 0, 
-                    "TotalTime": 0, "TotalActions": 0, 
-                    "GamesPlayed": 0, "FirstPlayerWins": 0,
-                    "TimePerAction": []  # And here
-                }
-            }
 
         results = update_stats(
             results, name1, name2, winner, 
@@ -209,27 +194,12 @@ class Randomf():
 
 if __name__ == "__main__":
     env = ConnectFour()
-    model=AlphaPredictorNerualNet(4)
+    model=AlphaPredictorNerualNet(9)
     model.load_state_dict(torch.load("data/test/model.pt"))
     mcts_versions = {
-    #"nn": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 1000),
-    #"genious 1": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 2000), # "genious
-    #"genious 2": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 1000),
-    #"genious 3": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 500), # "genious
-    #"genious 4": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 250), # "genious
     "single ": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 10),
     "nn": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 10),
     "nn2": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 10),
-
-    #"Basic MCTS ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE),
-    #"Basic normalized ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE_NORMALIZED),
-    #"dumbass": MCTS(n_simulations=10_000),
-    #"smart" :MCTS(env=ConnectFour() ,num_iterations= 20000),
-
-    #"random" :Randomf(env),
-    #"dumb" :MCTS(n_simulations=10),
-    
-    # Add other versions here
     }
 
     results = benchmark_mcts(mcts_versions, env, num_games=20)

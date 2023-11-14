@@ -47,21 +47,35 @@ ax.set_xticklabels(matchup_names, rotation=45, ha='right')
 ax.legend()
 
 # Function to add value labels above the bars
+# Function to add value labels above the bars
 def add_value_labels(ax, rects, total_games):
     for rect, total in zip(rects, total_games):
         height = rect.get_height()
+        # Skip labels for zero heights
+        if height == 0:
+            continue
         percentage = f'({height/total:.1%})' if total > 0 else '(0%)'
         label = f'{height} {percentage}'
+        # Adjust the offset if the height is too small, to place the label above the bar
+        offset = 10 if height < 3 else 3
         ax.annotate(label,
                     xy=(rect.get_x() + rect.get_width() / 2, height),
-                    xytext=(0, 3),  # 3 points vertical offset
+                    xytext=(0, offset),  # Offset depending on the height
                     textcoords="offset points",
-                    ha='center', va='bottom')
-
+                    ha='center', va='bottom', rotation=90, fontsize=8)  # Rotate labels and reduce font size
+                    
 # Call the function to add labels to the bars
 add_value_labels(ax, rects1, total_games_list)  # Add labels for Player 1 wins
 add_value_labels(ax, rects2, total_games_list)  # Add labels for Player 2 wins
 add_value_labels(ax, rects3, total_games_list)  # Add labels for Draws
+
+# Create a secondary y-axis for the percentages
+ax2 = ax.twinx()
+
+# Set the limits of the secondary y-axis based on the primary y-axis limits
+# The secondary axis will be a percentage of the total games, which we assume is the maximum number on the primary y-axis
+ax2.set_ylim(0, 100)
+ax2.set_ylabel('Percentage')
 
 # Adjust the layout
 plt.tight_layout()
