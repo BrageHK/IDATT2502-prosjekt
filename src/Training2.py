@@ -19,11 +19,10 @@ def play_game(env, mcts, match_id):
 
         memory = []
         player = 1
-        done = False
         state = env.get_initial_state()
         turn = 0
         
-        while not done:
+        while True:
             neutral_state = env.change_perspective(state, player)
             mcts_prob, action = mcts.search(neutral_state, training=True) 
 
@@ -40,13 +39,16 @@ def play_game(env, mcts, match_id):
             turn += 1
             if match_id == 1:
                 print(f"Turn: {turn}")
-        
-        player = env.get_opponent(player)
-        return_memory = []
-        for historical_state, historical_mcts_prob, historical_player in memory:
-            historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
-            return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
-        return return_memory
+            
+            if done:
+                player = env.get_opponent(player)
+                return_memory = []
+                for historical_state, historical_mcts_prob, historical_player in memory:
+                    historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
+                    return_memory.append(
+                (env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
+                return return_memory
+            player = env.get_opponent(player)
 
 class Trainer:
     def __init__(self, env=ConnectFour(), num_iterations=600, model=AlphaPredictorNerualNet(9)): # TODO: change iterations to 1000
@@ -126,7 +128,7 @@ if __name__ == "__main__":
     filename = folder+"model.pt"
     filename_loss_values = folder+"loss_values.pk1"
         
-    load_all = False
+    load_all = True
     if load_all:
         load_data(filename, filename_loss_values, trainer)
         
@@ -137,7 +139,7 @@ if __name__ == "__main__":
         print("Saved!")
         pass
     
-    while training_iterations < 1:
+    while True:
         print("Training iteration: ", training_iterations)
         try:
             trainer.train(num_games=games)

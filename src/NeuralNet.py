@@ -3,21 +3,26 @@ import torch.nn as nn
 import random
 import numpy as np
 import pickle
+import torch.nn.functional as F
 
+    
 class ResBlock(nn.Module):
-    def __init__(self, hidden_dim):
-        super().__init__()
-        
-        self.conv_blocks = nn.Sequential(
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(hidden_dim)
-        )
+  def __init__(self, num_hidden):
+    super().__init__()
+    self.block = nn.Sequential(
+        nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1),
+        nn.BatchNorm2d(num_hidden),
+        nn.ReLU(),
+        nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1),
+        nn.BatchNorm2d(num_hidden)
+    )
 
-    def forward(self, x):
-        return nn.ReLU()(x + self.conv_blocks(x))
+  def forward(self, x):
+      residual = x
+      x = self.block(x)
+      x += residual
+      x = F.relu(x)
+      return x
     
 """
     Side 11 på: "Improving Monte Carlo Tree Search with Artificial Neural Networks without Heuristics"
@@ -77,7 +82,7 @@ class AlphaPredictorNerualNet(nn.Module):
         self.policy_loss_history.append(policy_loss.item())
         return policy_loss + value_loss
             
-    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=128):
+    def optimize(self, model, memory, epoch=600, learning_rate=0.001, batch_size=128):
         random.shuffle(memory)
             
         if model.optimizer is None:

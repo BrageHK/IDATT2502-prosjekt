@@ -35,7 +35,7 @@ def games(folder):
         for i in range(10):
             print(positions[i])
         
-folder = "eilor"
+folder = "test2"
 
 #games(folder)
 loss(folder)
