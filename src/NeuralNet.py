@@ -3,21 +3,26 @@ import torch.nn as nn
 import random
 import numpy as np
 import pickle
+import torch.nn.functional as F
 
+    
 class ResBlock(nn.Module):
-    def __init__(self, hidden_dim):
-        super().__init__()
-        
-        self.conv_blocks = nn.Sequential(
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(hidden_dim)
-        )
+  def __init__(self, num_hidden):
+    super().__init__()
+    self.block = nn.Sequential(
+        nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1),
+        nn.BatchNorm2d(num_hidden),
+        nn.ReLU(),
+        nn.Conv2d(num_hidden, num_hidden, kernel_size=3, padding=1),
+        nn.BatchNorm2d(num_hidden)
+    )
 
-    def forward(self, x):
-        return nn.ReLU()(x + self.conv_blocks(x))
+  def forward(self, x):
+      residual = x
+      x = self.block(x)
+      x += residual
+      x = F.relu(x)
+      return x
     
 """
     Side 11 på: "Improving Monte Carlo Tree Search with Artificial Neural Networks without Heuristics"
@@ -77,42 +82,37 @@ class AlphaPredictorNerualNet(nn.Module):
         self.policy_loss_history.append(policy_loss.item())
         return policy_loss + value_loss
             
-    def optimize(self, model, memory, epoch=1_000, learning_rate=0.001, batch_size=64):
-
-        if len(memory) < batch_size:
-            print("Not enough data in memory, using all data. Memory length: ", len(memory))
-            return
+    def optimize(self, model, memory, epoch=600, learning_rate=0.001, batch_size=128):
+        random.shuffle(memory)
             
         if model.optimizer is None:
             model.optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
              
+
         for i in range(epoch):
             if i+1 % 10 == 0:
-                print("Starting epoch: ", i+1)
+                    print("Starting epoch: ", i+1)
+            for batch_index in range(0, len(memory), batch_size):
+                sample = memory[batch_index:min(len(memory) - 1, batch_index + batch_size)] # Change to memory[batchIdx:batchIdx+self.args['batch_size']] in case of an error
+                states, policy_targets, value_targets = zip(*sample)
                 
-            batch = random.sample(memory, batch_size)
+                states = np.array(states)
+                policy_targets = np.array(policy_targets)
+                value_targets = np.array([np.array(item).reshape(-1, 1) for item in value_targets])
             
-            # Variables to accumulate losses over the epoch
-            
-            states, policy_targets, value_targets = zip(*batch)
-            
-            states = np.array(states)
-            policy_targets = np.array(policy_targets)
-            value_targets = np.array([np.array(item).reshape(-1, 1) for item in value_targets])
-        
-            states = torch.tensor(states, dtype=torch.float32, device=model.device)
-            policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=model.device)
-            value_targets = torch.tensor(value_targets, dtype=torch.float32, device=model.device)
-            
-            policy_output, value_output = model(states)
-            
-            loss = model.loss(policy_output, value_output, policy_targets, value_targets.squeeze(-1))
+                states = torch.tensor(states, dtype=torch.float32, device=model.device)
+                policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=model.device)
+                value_targets = torch.tensor(value_targets, dtype=torch.float32, device=model.device)
+                
+                policy_output, value_output = model(states)
+                
+                loss = model.loss(policy_output, value_output, policy_targets, value_targets.squeeze(-1))
 
-            loss.backward()
-            model.optimizer.step()
-            model.optimizer.zero_grad()
+                loss.backward()
+                model.optimizer.step()
+                model.optimizer.zero_grad()
 
-            # Calculate average loss for the epoch and append to history
+                # Calculate average loss for the epoch and append to history
     
     # Takes in a state and uses the neuron network to get a policy and a value
     def forward(self, x):

@@ -13,6 +13,7 @@ import numpy as np
 import torch
 import os
 
+@torch.no_grad()
 def play_game(env, mcts, match_id):
         print(f'Starting match {match_id}')
 
@@ -33,24 +34,24 @@ def play_game(env, mcts, match_id):
             action = np.random.choice(env.action_space, p=mcts_prob)
             
             state, reward, done = env.step(state, action=action, player=player)
-           
+            player = env.get_opponent(player)
             
             turn += 1
-
+            if match_id == 1:
+                print(f"Turn: {turn}")
+            
             if done:
                 player = env.get_opponent(player)
                 return_memory = []
                 for historical_state, historical_mcts_prob, historical_player in memory:
                     historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
-                    return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
+                    return_memory.append(
+                (env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
                 return return_memory
             player = env.get_opponent(player)
-                        
-        
-        
 
 class Trainer:
-    def __init__(self, env=ConnectFour(), num_iterations=1_000, model=AlphaPredictorNerualNet(4)): # TODO: change iterations to 1000
+    def __init__(self, env=ConnectFour(), num_iterations=600, model=AlphaPredictorNerualNet(9)): # TODO: change iterations to 1000
         
         self.model = model
         self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_NN, model=model)
@@ -66,33 +67,24 @@ class Trainer:
     def load_model(self, path):
         self.model.load_state_dict(torch.load(path))
 
-    def train(self, num_games, memory):
-        print("self.model.eval()")
+    def train(self, num_games):
         self.model.eval()
-        
-        # Plays num_games against itself and stores the data in memory
         print("Starting self play")
-        
-        # for i in range(num_games):
-        #     print("Started game: ", i)
-        #     memory.extend(self.play_game())@
-        
+        memory = []
         mp.set_start_method('spawn', force=True)
-
         match_id = 1
         args_list = []
         for _ in range(num_games):
             args_list.append((self.env, self.mcts, match_id))
             match_id += 1
-        #mp.cpu_count()
-        # 1 core for debug
+
         with mp.Pool(mp.cpu_count()) as pool:
             result_list = pool.starmap(play_game, args_list)
         
         for i in range(len(result_list)):
-            memory.extend(result_list[i])
+            memory += result_list[i]
             
-        BoardPrinter.memory_debugger(result_list[0])
+        #BoardPrinter.memory_debugger(result_list[0])
             
         # Trains the model on the data in memory
         print("Training model")
@@ -101,36 +93,21 @@ class Trainer:
         self.model.optimize(self.model, memory)
         
         return memory
-    
-    def save_games(self, memory, filename):
-        with open(filename, "wb") as file:
-            pickle.dump(memory, file)
-            
-    def load_games(self, filename):
-        with open(filename, "rb") as file:
-            return pickle.load(file)
         
     def load_loss_history(self, filename):
         with open(filename, "rb") as file:
             return pickle.load(file)
 
 
-def load_data(filename, filename_games, filename_loss_values, trainer):
-    memory = deque(maxlen=500_000)
+def load_data(filename, filename_loss_values, trainer):
     try:
         trainer.load_model(filename)
     except FileNotFoundError:
         print("No model found with name: ", filename)
     try:
-        memory = trainer.load_games(filename_games)
-    except FileNotFoundError:
-        print("No memory found from file: ", filename_games)
-        exit()
-    try:
         trainer.model.policy_loss_history, trainer.model.value_loss_history = trainer.load_loss_history(filename_loss_values)
     except FileNotFoundError:
         print("No loss values found from file: ", filename_loss_values)
-    return memory
 
 if __name__ == "__main__":
     
@@ -140,9 +117,8 @@ if __name__ == "__main__":
 
     training_iterations = 0
     games = mp.cpu_count()
-    memory = deque(maxlen=500_000)
     
-    folder = "data/test/"
+    folder = "data/test2/"
     
     if not os.path.exists(folder):
         # Create the folder
@@ -150,17 +126,15 @@ if __name__ == "__main__":
         print(f"Folder created: {folder}")
     
     filename = folder+"model.pt"
-    filename_games = folder+"games.pk1"
     filename_loss_values = folder+"loss_values.pk1"
         
     load_all = True
     if load_all:
-        memory = load_data(filename, filename_games, filename_loss_values, trainer)
+        load_data(filename, filename_loss_values, trainer)
         
     def save_all():
         print("\nSaving model, games and loss values")
         trainer.save_model(filename)
-        trainer.save_games(memory, filename_games)
         trainer.model.save_loss_values_to_file(filename_loss_values)
         print("Saved!")
         pass
@@ -168,7 +142,7 @@ if __name__ == "__main__":
     while True:
         print("Training iteration: ", training_iterations)
         try:
-            memory.extend(trainer.train(num_games=games, memory=memory))
+            trainer.train(num_games=games)
         except KeyboardInterrupt:
             save_all()
             break

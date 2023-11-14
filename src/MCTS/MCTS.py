@@ -8,7 +8,7 @@ from Node.NodeType import NodeType
 from Node.Node_threshold import NodeThreshold
 
 class MCTS:
-    def __init__(self, env, num_iterations, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None, turn_time=None):
+    def __init__(self, env, num_iterations=69, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None, turn_time=None):
         self.env = env
         self.num_iterations = num_iterations
         self.NODE_TYPE = NODE_TYPE

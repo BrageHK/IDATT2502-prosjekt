@@ -55,6 +55,8 @@ class NodeNN:
         policy = torch.softmax(policy, axis = 1).squeeze(0).detach().cpu().numpy()
         policy *= self.env.get_legal_moves_bool_array(self.state)
         sum = np.sum(policy)
+        if sum == 0:
+            print("ERROR: sum of policy is 0")
         policy /= sum
         
         value = value.item()
