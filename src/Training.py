@@ -22,7 +22,7 @@ def play_game(env, mcts, match_id):
         state = env.get_initial_state()
         turn = 0
         
-        while not done:
+        while True:
             neutral_state = env.change_perspective(state, player)
             mcts_prob, action = mcts.search(neutral_state, training=True) 
 
@@ -34,24 +34,22 @@ def play_game(env, mcts, match_id):
             action = np.random.choice(env.action_space, p=mcts_prob)
             
             state, reward, done = env.step(state, action=action, player=player)
-            player = env.get_opponent(player)
+            if done:
+                return_memory = []
+                for historical_state, historical_mcts_prob, historical_player in memory:
+                    historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
+                    return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
+                return return_memory
             
+            player = env.get_opponent(player)
             turn += 1
-        
-        player = env.get_opponent(player)
-        return_memory = []
-        for historical_state, historical_mcts_prob, historical_player in memory:
-            historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
-            return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
-        return return_memory
 
 class Trainer:
-    def __init__(self, env=ConnectFour(), num_iterations=1_000, model=AlphaPredictorNerualNet(4)): # TODO: change iterations to 1000
+    def __init__(self, env=ConnectFour(), num_iterations=7, model=AlphaPredictorNerualNet(4)): # TODO: change iterations to 600
         
         self.model = model
         self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_NN, model=model)
         self.env = env
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         print("Starting training using: ", "cuda" if torch.cuda.is_available() else "cpu")
         print("Cores used for training: ", mp.cpu_count())
@@ -128,10 +126,7 @@ def load_data(filename, filename_games, filename_loss_values, trainer):
         print("No loss values found from file: ", filename_loss_values)
     return memory
 
-if __name__ == "__main__":
-    
-    print("Starting training file")
-    
+if __name__ == "__main__":    
     trainer = Trainer(env = ConnectFour())
 
     training_iterations = 0

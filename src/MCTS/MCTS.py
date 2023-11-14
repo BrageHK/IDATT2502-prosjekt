@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import torch
 
 from Node.Node import Node
 from Node.Node_normalized import NodeNormalized
@@ -21,11 +22,23 @@ class MCTS:
         elif self.NODE_TYPE == NodeType.NODE_NORMALIZED:
             return NodeNormalized(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_NN:
-            return NodeNN(self.env, state, model=self.model)
+            return NodeNN(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_THRESHOLD:
             return NodeThreshold(self.env, state)
         else:
             raise Exception("Invalid node type")
+        
+    def get_neural_network_predictions(self, state):
+        tensor_state = torch.tensor(self.env.get_encoded_state(state), device=self.model.device).unsqueeze(0)
+        policy, value = self.model.forward(tensor_state)
+        
+        policy = torch.softmax(policy, axis = 1).squeeze(0).detach().cpu().numpy()
+        policy *= self.env.get_legal_moves_bool_array(state)
+        
+        sum = np.sum(policy)
+        policy /= sum
+            
+        return policy, value.item()
         
     def mcts_AlphaZero(self, root):
         # Select
@@ -36,7 +49,7 @@ class MCTS:
         
         if not done:
             # Predicts probabilities for each move and winner probability
-            policy, result = node.get_neural_network_predictions()
+            policy, result = self.get_neural_network_predictions(node.state)
             
             # Expand node
             node.expand(policy)
@@ -60,29 +73,42 @@ class MCTS:
         # Backpropagate with simulation result
         node.backpropagate(result)
         
+    @torch.no_grad()
     def search(self, state, training=False):
         root = self.create_node(state)
         
-        if self.turn_time == None:
-            if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
-                for _ in range(self.num_iterations):
-                    self.mcts(root)
-            elif self.NODE_TYPE == NodeType.NODE_NN:
-                for _ in range(self.num_iterations):
-                    self.mcts_AlphaZero(root)
-            else:
-                raise Exception("Invalid node type")
+        # if self.turn_time == None:
+        #     if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
+        #         for _ in range(self.num_iterations):
+        #             self.mcts(root)
+        #     elif self.NODE_TYPE == NodeType.NODE_NN:
+        #         for _ in range(self.num_iterations):
+        #             self.mcts_AlphaZero(root)
+        #     else:
+        #         raise Exception("Invalid node type")
+        # else:
+        #     if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
+        #         start = time.time()
+        #         while time.time() - start < self.turn_time:
+        #             self.mcts(root)
+        #     elif self.NODE_TYPE == NodeType.NODE_NN:
+        #         start = time.time()
+        #         while time.time() - start < self.turn_time:
+        #             self.mcts_AlphaZero(root)
+        #     else:
+        #         raise Exception("Invalid node type")
+        mcts_method = self.mcts if self.NODE_TYPE in [NodeType.NODE, NodeType.NODE_NORMALIZED, NodeType.NODE_THRESHOLD] else self.mcts_AlphaZero if self.NODE_TYPE == NodeType.NODE_NN else None
+        if mcts_method is None:
+            raise Exception("Invalid node type")
+
+        if self.turn_time is None:
+            for _ in range(self.num_iterations):
+                mcts_method(root)
         else:
-            if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
-                start = time.time()
-                while time.time() - start < self.turn_time:
-                    self.mcts(root)
-            elif self.NODE_TYPE == NodeType.NODE_NN:
-                start = time.time()
-                while time.time() - start < self.turn_time:
-                    self.mcts_AlphaZero(root)
-            else:
-                raise Exception("Invalid node type")
+            start = time.time()
+            while time.time() - start < self.turn_time:
+                mcts_method(root)
+
             
         visits = np.array([child.visits for child in root.children])
         #print("Visits: ", visits)
@@ -90,7 +116,7 @@ class MCTS:
         #print("Best action: ", best_action)
         
         if training:
-            visits = np.zeros(self.env.COLUMN_COUNT)
+            visits = np.zeros(self.env.action_space)
             for child in root.children:
                 visits[child.action_taken] = child.visits
             probabilties = visits / np.sum(visits)

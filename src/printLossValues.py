@@ -9,6 +9,8 @@ def loss(folder):
         
         print("Policy loss data poins:")
         print(len(policy_loss))
+        for i in range(10):
+            print(policy_loss[i])
         #print("first loss value: ", policy_loss)
         # print("Value loss data points:")
         # print(len(value_loss))

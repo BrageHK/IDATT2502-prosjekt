@@ -12,8 +12,9 @@ class ConnectFour:
         self.COLUMN_COUNT = 7
         self.action_space = self.COLUMN_COUNT
         self.in_a_row = 4
-        #self.last_row = None
-        #self.last_col = None
+    
+    def __repr__(self):
+        return "ConnectFour"
         
     def get_initial_state(self): # TODO: remove - it is no point whith this, can create a new environment
         return np.zeros((self.ROW_COUNT, self.COLUMN_COUNT))
@@ -28,7 +29,7 @@ class ConnectFour:
         return state[self.ROW_COUNT - 1][col] == 0
     
     def get_next_open_row(self, state, col):
-        for row in range(self.ROW_COUNT):
+        for row in range(self.ROW_COUNT-1, -1, -1):
             if state[row][col] == 0:
                 return row
     
