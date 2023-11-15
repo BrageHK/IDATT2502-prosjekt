@@ -11,7 +11,7 @@ print(env.__repr__())
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_resBlocks = 4
 model = AlphaPredictorNerualNet(num_resBlocks=num_resBlocks, env=env, device=device)
-model.load_state_dict(torch.load(f"data/TicTacToe/model-{num_resBlocks}.pt", map_location=device))
+model.load_state_dict(torch.load(f"data/TicTacToe/model-{num_resBlocks}-55.pt", map_location=device))
 mcts = MCTS.MCTS(env, 60, NODE_TYPE=NodeType.NODE_NN, model=model)
 
 done = 0
@@ -31,9 +31,7 @@ while True:
             continue
     else:
         neutral_state = env.change_perspective(state, player)
-        action = mcts.search(neutral_state)
-        print("ai action: ", action)
-        
+        action = mcts.search(neutral_state)        
         
     state, value, is_terminal = env.step(state, action, player)
         

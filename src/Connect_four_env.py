@@ -53,7 +53,7 @@ class ConnectFour:
         """
         return: (piece, row)
         """
-        for row in range(self.ROW_COUNT-1, -1, -1):
+        for row in range(self.ROW_COUNT):
             if state[row][col] != 0:
                 return state[row][col], row
         raise ValueError("Trying to get top piece from empty column")
@@ -80,7 +80,7 @@ class ConnectFour:
             return self.in_a_row - 1
 
         return (
-            count(-1, 0) >= self.in_a_row - 1 # vertical
+            count(1, 0) >= self.in_a_row - 1 # vertical
             or (count(0, 1) + count(0, -1)) >= self.in_a_row - 1 # horizontal
             or (count(1, 1) + count(-1, -1)) >= self.in_a_row - 1 # top left diagonal
             or (count(1, -1) + count(-1, 1)) >= self.in_a_row - 1 # top right diagonal
@@ -132,13 +132,20 @@ if __name__ == "__main__":
 
     state = [
         [0, 0, 1, 0, 0, 0, 1],
-        [0, 0, 0, 1, 0, 0, -1],
-        [0, 0, 0, 0, 1, 0, -1],
-        [0, 0, 0, 0, 0, 1, -1],
-        [0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, -1, 0, 0, 1],
+        [0, 0, 0, 0, 1, 0, 1],
+        [0, 0, 0, 0, 0, 1, 1],
+        [0, 0, 0, 0, 0, 0, -1],
+        [0, 0, 0, 0, 0, 0, -1],
         ]
     piece, row = env.get_top_piece(state, 6)
     print("piece: ", piece, " row: ", row)
     print("state[0][6]: ", state[0][6])
-    print("Check win", env.check_win(state, 2))
+    print("Check win", env.check_win(state, 5))
+    for i in range(len(state)):
+        print(state[i])
+    for _ in range(3):
+        env.drop_piece(state, 0, -1)
+        print("\n")
+        for i in range(len(state)):
+            print(state[i])

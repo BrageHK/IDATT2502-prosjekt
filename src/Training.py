@@ -87,7 +87,7 @@ class Trainer:
         with open(filename, "rb") as file:
             return pickle.load(file)
     
-    def load_data(self, filename_model, filename_loss_values, filename_optimizer):
+    def load_data(self, filename_model, filename_loss_values, filename_optimizer, filename_game_length):
         try:
             self.load_model(filename_model)
         except FileNotFoundError:
@@ -95,15 +95,15 @@ class Trainer:
         try:
             self.optimizer = self.load_optimizer(filename_optimizer)
         except FileNotFoundError:
-            print("No loss values found from file: ", filename_loss_values)
+            print("No loss values found from file: ", filename_optimizer)
         try:
             self.model.policy_loss_history, self.model.value_loss_history = self.load_loss_history(filename_loss_values)
         except FileNotFoundError:
             print("No loss values found from file: ", filename_loss_values)
         try:
-            self.game_length_history = self.load_game_length(filename_loss_values)
+            self.game_length_history = self.load_game_length(filename_game_length)
         except FileNotFoundError:
-            print("No game length values found from file: ", filename_loss_values)
+            print("No game length values found from file: ", filename_game_length)
 
     def train(self, num_games, memory=[]):
         self.model.eval()
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     env = TicTacToe()
     num_resBlocks = 4
     model = AlphaPredictorNerualNet(num_resBlocks=num_resBlocks, device=device, env=env)
-    trainer = Trainer(env = env, model=model, num_iterations=100)
+    trainer = Trainer(env = env, model=model, num_iterations=600)
 
     games = mp.cpu_count()
     
@@ -180,13 +180,15 @@ if __name__ == "__main__":
     filename_model = folder+f"model-{num_resBlocks}.pt"
     filename_optimizer = folder+f"optimizer-{num_resBlocks}.pt"
     filename_loss_values = folder+f"loss_values-{num_resBlocks}.pk1"
+    filename_game_length = folder+f"game_length-{num_resBlocks}.pk1"
         
-    load_all = False
+    load_all = True
     if load_all:
         trainer.load_data(
             filename_model=filename_model, 
             filename_loss_values=filename_loss_values, 
-            filename_optimizer=filename_optimizer
+            filename_optimizer=filename_optimizer,
+            filename_game_length=filename_game_length
             )
         
     def save_all():
@@ -216,8 +218,12 @@ if __name__ == "__main__":
         save_all()
         training_iterations += 1
         
+        print("Loss values:")
+        print(trainer.policy_loss_history[-10:-1])
+        print(trainer.value_loss_history[-10:-1])
+        
         if training_iterations % 5 == 0:
             save_all_iterations(training_iterations)
         
-        if training_iterations % 350:
+        if training_iterations % 30:
             memory = []
