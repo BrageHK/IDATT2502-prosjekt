@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def loss(folder):
-    with open("data/"+folder+"/loss_values.pk1", "rb") as file:
+    with open("data/"+folder+"/loss_values364.pk1", "rb") as file:
         policy_loss, value_loss = pickle.load(file)
         
         print("Policy loss data poins:")
-        print(len(policy_loss))
-        for i in range(10):
-            print(policy_loss[i])
+        # print(len(policy_loss))
+        # for i in range(10):
+        #     print(policy_loss[i])
         #print("first loss value: ", policy_loss)
         # print("Value loss data points:")
         # print(len(value_loss))
@@ -41,3 +41,4 @@ folder = "eilor"
 
 #games(folder)
 loss(folder)
+

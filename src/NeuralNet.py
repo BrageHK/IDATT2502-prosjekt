@@ -48,11 +48,11 @@ class AlphaPredictorNerualNet(nn.Module):
         
         # Predicts probability for the current player to win - if over a threshold not simulated, simulated only if below threshold
         self.value_network = nn.Sequential(
-            nn.Conv2d(hidden_dim, 3, kernel_size=3, padding=1),
-            nn.BatchNorm2d(3),
+            nn.Conv2d(hidden_dim, hidden_dim_policy, kernel_size=3, padding=1),
+            nn.BatchNorm2d(hidden_dim_policy),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(3 * env.ROW_COUNT * env.COLUMN_COUNT, 1),
+            nn.Linear(hidden_dim_policy * env.ROW_COUNT * env.COLUMN_COUNT, 1),
             nn.Tanh()
         )
         

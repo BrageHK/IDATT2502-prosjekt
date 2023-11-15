@@ -2,7 +2,6 @@ import torch.multiprocessing as mp
 import pickle
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import os
 import random
@@ -30,9 +29,8 @@ def play_game(env, mcts, match_id):
 
             memory.append((neutral_state, mcts_prob, player))
 
-            if turn < 16: # Higher exploration in the first 10 moves
-                mcts_prob = np.power(mcts_prob, 1/1.5)
-                mcts_prob = mcts_prob / np.sum(mcts_prob)
+            mcts_prob = np.power(mcts_prob, 1/1.25)
+            mcts_prob = mcts_prob / np.sum(mcts_prob)
             action = np.random.choice(env.action_space, p=mcts_prob)
             
             state, reward, done = env.step(state, action=action, player=player)
@@ -51,6 +49,7 @@ class Trainer:
     def __init__(self, model, env=ConnectFour(), num_iterations=600):
         self.policy_loss_history = []
         self.value_loss_history = []
+        self.game_length_history = []
         self.model = model
         self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_NN, model=model)
         self.env = env
@@ -58,6 +57,11 @@ class Trainer:
 
         print("Starting training using: ", "cuda" if torch.cuda.is_available() else "cpu")
         print("Cores used for training: ", mp.cpu_count())
+        
+        
+    def save_game_length(self, filename):
+        with open(filename, "wb") as file:
+            pickle.dump(self.game_length_history, file)
         
     def save_model(self, filename):
         torch.save(self.model.state_dict(), filename)
@@ -79,6 +83,10 @@ class Trainer:
     def load_optimizer(self, filename):
         self.optimizer.load_state_dict(torch.load(filename))
     
+    def load_game_length(self, filename):
+        with open(filename, "rb") as file:
+            return pickle.load(file)
+    
     def load_data(self, filename_model, filename_loss_values, filename_optimizer):
         try:
             self.load_model(filename_model)
@@ -92,6 +100,10 @@ class Trainer:
             self.model.policy_loss_history, self.model.value_loss_history = self.load_loss_history(filename_loss_values)
         except FileNotFoundError:
             print("No loss values found from file: ", filename_loss_values)
+        try:
+            self.game_length_history = self.load_game_length(filename_loss_values)
+        except FileNotFoundError:
+            print("No game length values found from file: ", filename_loss_values)
 
     def train(self, num_games, memory=[]):
         self.model.eval()
@@ -108,6 +120,7 @@ class Trainer:
         
         for i in range(len(result_list)):
             memory += result_list[i]
+            self.game_length_history.append(len(result_list[i]))
             
         print("Training model")
         self.model.train() # Sets training mode
@@ -150,12 +163,11 @@ class Trainer:
                 
 
 if __name__ == "__main__":
-    print("Starting training with device: ", "cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = ConnectFour()
-    num_resBlocks = 3
+    num_resBlocks = 9
     model = AlphaPredictorNerualNet(num_resBlocks=num_resBlocks, device=device, env=env)
-    trainer = Trainer(env = env, model=model, num_iterations=60)
+    trainer = Trainer(env = env, model=model, num_iterations=600)
 
     games = mp.cpu_count()
     
@@ -182,6 +194,7 @@ if __name__ == "__main__":
         trainer.save_model(filename_model)
         trainer.save_loss_history(filename_loss_values)
         trainer.save_optimizer(filename_optimizer)
+        trainer.save_game_length(folder+f"game_length-{num_resBlocks}.pk1")
         print("Saved!")
         pass
 
@@ -195,3 +208,6 @@ if __name__ == "__main__":
             break
         save_all()
         training_iterations += 1
+        
+        if training_iterations % 200:
+            memory = []

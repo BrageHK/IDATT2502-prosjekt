@@ -77,26 +77,6 @@ class MCTS:
     def search(self, state, training=False):
         root = self.create_node(state)
         
-        # if self.turn_time == None:
-        #     if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
-        #         for _ in range(self.num_iterations):
-        #             self.mcts(root)
-        #     elif self.NODE_TYPE == NodeType.NODE_NN:
-        #         for _ in range(self.num_iterations):
-        #             self.mcts_AlphaZero(root)
-        #     else:
-        #         raise Exception("Invalid node type")
-        # else:
-        #     if self.NODE_TYPE == NodeType.NODE or self.NODE_TYPE == NodeType.NODE_NORMALIZED or self.NODE_TYPE == NodeType.NODE_THRESHOLD:
-        #         start = time.time()
-        #         while time.time() - start < self.turn_time:
-        #             self.mcts(root)
-        #     elif self.NODE_TYPE == NodeType.NODE_NN:
-        #         start = time.time()
-        #         while time.time() - start < self.turn_time:
-        #             self.mcts_AlphaZero(root)
-        #     else:
-        #         raise Exception("Invalid node type")
         mcts_method = self.mcts if self.NODE_TYPE in [NodeType.NODE, NodeType.NODE_NORMALIZED, NodeType.NODE_THRESHOLD] else self.mcts_AlphaZero if self.NODE_TYPE == NodeType.NODE_NN else None
         if mcts_method is None:
             raise Exception("Invalid node type")
@@ -109,16 +89,16 @@ class MCTS:
             while time.time() - start < self.turn_time:
                 mcts_method(root)
 
-            
-        visits = np.array([child.visits for child in root.children])
-        #print("Visits: ", visits)
-        best_action = max(root.children, key=lambda child: child.visits, default=None).action_taken
+        visits = np.zeros(self.env.action_space)
+        for child in root.children:
+            visits[child.action_taken] = child.visits
+        print("Visits: ", visits)
         #print("Best action: ", best_action)
+        probabilties = visits / np.sum(visits)
+        print("Probabilties: ", probabilties)
         
+        best_action = np.argmax(visits)
+        print("Best action: ", best_action)
         if training:
-            visits = np.zeros(self.env.action_space)
-            for child in root.children:
-                visits[child.action_taken] = child.visits
-            probabilties = visits / np.sum(visits)
             return probabilties, best_action
         return best_action
