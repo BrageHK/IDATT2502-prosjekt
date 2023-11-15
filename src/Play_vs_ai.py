@@ -131,9 +131,9 @@ class ConnectFourTerminal:
 
 if __name__ == "__main__":
     #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)@
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model=AlphaPredictorNerualNet(9, device, ConnectFour())
-    model.load_state_dict(torch.load("data/eilor/model3.pt", map_location=torch.device('cpu')))
-    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE_NN, model=model, turn_time=5)
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #model=AlphaPredictorNerualNet(9, device, ConnectFour())
+    #model.load_state_dict(torch.load("data/eilor/model3.pt", map_location=torch.device('cpu')))
+    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE, turn_time=1)
 
     curses.wrapper(lambda stdscr: ConnectFourTerminal.initialize_terminal(stdscr, opponent_algorithm))

@@ -141,7 +141,7 @@ class Trainer:
             random.shuffle(memory)
 
             print("Starting epoch: ", i+1)
-            for batch_index in range(0, min(len(memory), training_positions), batch_size):
+            for batch_index in range(max(0, len(memory) - training_positions), len(memory), batch_size):
                 sample = memory[batch_index:min(len(memory) - 1, batch_index + batch_size)]
                 states, policy_targets, value_targets = zip(*sample)
                 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     filename_loss_values = folder+f"loss_values-{num_resBlocks}.pk1"
     filename_game_length = folder+f"game_length-{num_resBlocks}.pk1"
         
-    load_all = True
+    load_all = False
     if load_all:
         trainer.load_data(
             filename_model=filename_model, 
@@ -194,16 +194,16 @@ if __name__ == "__main__":
     def save_all():
         print("\nSaving model, optimizer and loss values")
         trainer.save_model(folder+f"model-{num_resBlocks}.pt")
-        trainer.save_loss_history(folder+f"optimizer-{num_resBlocks}.pt")
-        trainer.save_optimizer(folder+f"loss_values-{num_resBlocks}.pk1")
+        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}.pt")
+        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}.pk1")
         trainer.save_game_length(folder+f"game_length-{num_resBlocks}.pk1")
         print("Saved!")
     
     def save_all_iterations(iteration):
         print("\nSaving model, optimizer, game lengths and loss values")
         trainer.save_model(folder+f"model-{num_resBlocks}-{iteration}.pt")
-        trainer.save_loss_history(folder+f"optimizer-{num_resBlocks}-{iteration}.pt")
-        trainer.save_optimizer(folder+f"loss_values-{num_resBlocks}-{iteration}.pk1")
+        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}-{iteration}.pt")
+        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}-{iteration}.pk1")
         trainer.save_game_length(folder+f"game_length-{num_resBlocks}-{iteration}.pk1")
         print("Saved!")
 
