@@ -9,9 +9,9 @@ env = TicTacToe()
 
 print(env.__repr__())
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model = AlphaPredictorNerualNet(num_resBlocks=9, env=env, device=device)
-model.load_state_dict(torch.load("data/TicTacToe/model.pt", map_location=device))
+num_resBlocks = 4
+model = AlphaPredictorNerualNet(num_resBlocks=num_resBlocks, env=env, device=device)
+model.load_state_dict(torch.load(f"data/TicTacToe/model-{num_resBlocks}.pt", map_location=device))
 mcts = MCTS.MCTS(env, 60, NODE_TYPE=NodeType.NODE_NN, model=model)
 
 done = 0

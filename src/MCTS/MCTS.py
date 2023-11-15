@@ -28,18 +28,31 @@ class MCTS:
         else:
             raise Exception("Invalid node type")
         
+    @torch.no_grad()
     def get_neural_network_predictions(self, state):
         tensor_state = torch.tensor(self.env.get_encoded_state(state), device=self.model.device).unsqueeze(0)
         policy, value = self.model.forward(tensor_state)
         
         policy = torch.softmax(policy, axis = 1).squeeze(0).detach().cpu().numpy()
-        policy *= self.env.get_legal_moves_bool_array(state)
+        policy_before = policy.copy()
+        legal_moves = self.env.get_legal_moves_bool_array(state)
+        policy *= legal_moves
         
         sum = np.sum(policy)
+        if sum == 0:
+            print("Sum is 0!! what")
+            policy = legal_moves
+            sum = np.sum(policy)
+            print("policy before: ")
+            print(policy_before)
+            print("legal moves: ")
+            print(legal_moves)
+            if sum == 0:
+                raise Exception("No legal moves")
         policy /= sum
-            
         return policy, value.item()
         
+    @torch.no_grad()
     def mcts_AlphaZero(self, root):
         # Select
         node = root.select()
@@ -50,13 +63,14 @@ class MCTS:
         if not done:
             # Predicts probabilities for each move and winner probability
             policy, result = self.get_neural_network_predictions(node.state)
-            
+                        
             # Expand node
             node.expand(policy)
 
         # Backpropagate with simulation result
         node.backpropagate(result)
     
+    @torch.no_grad()
     def mcts(self, root):
         # Select
         node = root.select()
@@ -92,13 +106,13 @@ class MCTS:
         visits = np.zeros(self.env.action_space)
         for child in root.children:
             visits[child.action_taken] = child.visits
-        print("Visits: ", visits)
+        #print("Visits: ", visits)
         #print("Best action: ", best_action)
         probabilties = visits / np.sum(visits)
-        print("Probabilties: ", probabilties)
+        #print("Probabilties: ", probabilties)
         
         best_action = np.argmax(visits)
-        print("Best action: ", best_action)
+        #print("Best action: ", best_action)
         if training:
             return probabilties, best_action
         return best_action
