@@ -36,7 +36,7 @@ class ConnectFourTerminal:
         self.stdscr.addstr(0, 0, "\nCurrent Board:")
         self.stdscr.addstr(1, 0, "---------------")
         row_num = 2
-        for row in reversed(self.state):
+        for row in self.state:
             self.stdscr.addstr(row_num, 0, "|")
             for cell in row:
                 if cell == 1:

@@ -26,7 +26,7 @@ class ConnectFour:
         #self.last_col = col  # Add this line
       
     def is_valid_location(self, col, state):
-        return state[self.ROW_COUNT - 1][col] == 0
+        return state[0][col] == 0
     
     def get_next_open_row(self, state, col):
         for row in range(self.ROW_COUNT-1, -1, -1):
@@ -149,3 +149,9 @@ if __name__ == "__main__":
         print("\n")
         for i in range(len(state)):
             print(state[i])
+    for _ in range(3):
+        env.step(state, 1, 1)
+        print("\n")
+        for i in range(len(state)):
+            print(state[i])
+    print(env.is_valid_location(2, state))
