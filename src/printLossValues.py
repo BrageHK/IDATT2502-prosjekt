@@ -5,7 +5,7 @@ import numpy as np
 
 def loss(folder):
     print("data/"+folder+"/loss_values-4.pt")
-    with open("data/"+folder+"/optimizer-4.pt", "rb") as file:
+    with open("data/"+folder+"/loss_values-4.pk1", "rb") as file:
         policy_loss, value_loss = pickle.load(file)
         
         print("Policy loss data poins:")

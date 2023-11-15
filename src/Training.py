@@ -167,9 +167,9 @@ if __name__ == "__main__":
     env = TicTacToe()
     num_resBlocks = 4
     model = AlphaPredictorNerualNet(num_resBlocks=num_resBlocks, device=device, env=env)
-    trainer = Trainer(env = env, model=model, num_iterations=600)
+    trainer = Trainer(env = env, model=model, num_iterations=60)
 
-    games = mp.cpu_count()
+    games = 500 #mp.cpu_count()
     
     folder = "data/"+env.__repr__()+"/"
     
@@ -187,28 +187,28 @@ if __name__ == "__main__":
         trainer.load_data(
             filename_model=filename_model, 
             filename_loss_values=filename_loss_values, 
-            filename_optimizer=filename_optimizer,
+            filename_optimizer=filename_optimizer, #Funker ikke å laste inn adam fordi idk
             filename_game_length=filename_game_length
             )
         
     def save_all():
         print("\nSaving model, optimizer and loss values")
         trainer.save_model(folder+f"model-{num_resBlocks}.pt")
-        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}.pt")
-        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}.pk1")
+        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}.pk1")
+        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}.pt")
         trainer.save_game_length(folder+f"game_length-{num_resBlocks}.pk1")
         print("Saved!")
     
     def save_all_iterations(iteration):
         print("\nSaving model, optimizer, game lengths and loss values")
         trainer.save_model(folder+f"model-{num_resBlocks}-{iteration}.pt")
-        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}-{iteration}.pt")
-        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}-{iteration}.pk1")
+        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}-{iteration}.pk1")
+        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}-{iteration}.pt")
         trainer.save_game_length(folder+f"game_length-{num_resBlocks}-{iteration}.pk1")
         print("Saved!")
 
     training_iterations = 0
-    while True:
+    while training_iterations < 3:
         print("Training iteration: ", training_iterations)
         try:
             trainer.train(num_games=games)
@@ -219,10 +219,13 @@ if __name__ == "__main__":
         training_iterations += 1
         
         print("Loss values:")
-        print(trainer.policy_loss_history[-10:-1])
-        print(trainer.value_loss_history[-10:-1])
         
-        if training_iterations % 5 == 0:
+        # avg loss of last 10 elements
+        print("avg loss of last 10 elements")
+        print("policy loss: ", sum(trainer.policy_loss_history[-10:])/10)
+        print("value loss: ", sum(trainer.value_loss_history[-10:])/10)
+        
+        if training_iterations % 20 == 0:
             save_all_iterations(training_iterations)
         
         if training_iterations % 30:

@@ -15,7 +15,7 @@ model.load_state_dict(torch.load(f"data/TicTacToe/model-{num_resBlocks}.pt", map
 mcts = MCTS.MCTS(env, 60, NODE_TYPE=NodeType.NODE_NN, model=model)
 
 done = 0
-player = 1
+player = -1
 state = env.get_initial_state()
 
 while True:
