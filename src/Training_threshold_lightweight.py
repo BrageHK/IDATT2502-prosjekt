@@ -10,7 +10,7 @@ import torch.multiprocessing as mp
 import time
 import random
 
-from NeuralNetThreshold import NeuralNetThreshold
+from NeuralNetThreshold_lightweight import NeuralNetThresholdLightweight
 from Node.NodeType import NodeType
 
 def reward_tuple(reward):
@@ -44,16 +44,17 @@ def play_game(env, mcts, match_id):
                 for historical_state, historical_player in memory:
                     historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
                     historical_outcome = reward_tuple(historical_outcome)
-                    return_memory.append((env.get_encoded_state(historical_state), historical_outcome))
+                    historical_state = np.array(historical_state)
+                    return_memory.append((historical_state.flatten(), historical_outcome))
                 return return_memory
             
             turn += 1
             player = env.get_opponent(player)
 
-class TrainerThreshold:
+class TrainerThresholdLightweight:
     def __init__(self, model, env=ConnectFour(), num_iterations=5_000):
         self.model = model
-        self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_THRESHOLD, model=model)
+        self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_THRESHOLD_LIGHTWEIGHT, model=model)
         self.env = env
         self.value_loss_history = []
         self.game_length_history = []
@@ -174,10 +175,10 @@ def create_folder(folder):
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = TicTacToe()
-    model = NeuralNetThreshold(env=env, device=device)
-    trainer = TrainerThreshold(env = env, model=model, num_iterations=60)
+    model = NeuralNetThresholdLightweight(env=env, device=device)
+    trainer = TrainerThresholdLightweight(env = env, model=model, num_iterations=60)
 
-    games = mp.cpu_count()*8
+    games = mp.cpu_count()
     
     folder = "data/threshold"+env.__repr__()+"/"
     
