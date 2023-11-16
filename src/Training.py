@@ -11,7 +11,7 @@ from Connect_four_env import ConnectFour
 from TicTacToe import TicTacToe
 from NeuralNet import AlphaPredictorNerualNet
 from Node.NodeType import NodeType
-
+from tqdm import tqdm
 
 @torch.no_grad()
 def play_game(env, mcts, match_id):
@@ -21,7 +21,6 @@ def play_game(env, mcts, match_id):
         player = 1
         done = False
         state = env.get_initial_state()
-        turn = 0
         
         while True:
             neutral_state = env.change_perspective(state, player)
@@ -42,8 +41,6 @@ def play_game(env, mcts, match_id):
                 return return_memory
             
             player = env.get_opponent(player)
-            
-            turn += 1        
 
 class Trainer:
     def __init__(self, model, env=ConnectFour(), num_iterations=600):
@@ -116,7 +113,7 @@ class Trainer:
         print("Starting self play")
         mp.set_start_method('spawn', force=True)
         with mp.Pool(mp.cpu_count()) as pool:
-            result_list = pool.starmap(play_game, args_list)
+            result_list = list(tqdm(pool.starmap(play_game, args_list), total=len(args_list)))
         
         for i in range(len(result_list)):
             memory += result_list[i]
@@ -136,12 +133,12 @@ class Trainer:
         self.policy_loss_history.append(policy_loss.item())
         return policy_loss + value_loss
     
-    def optimize(self, memory, epoch=4, batch_size=128, training_positions=50_000):
+    def optimize(self, memory, epoch=4, batch_size=128):
         for i in range(epoch):
             random.shuffle(memory)
 
             print("Starting epoch: ", i+1)
-            for batch_index in range(max(0, len(memory) - training_positions), len(memory), batch_size):
+            for batch_index in range(0, len(memory), batch_size):
                 sample = memory[batch_index:min(len(memory) - 1, batch_index + batch_size)]
                 states, policy_targets, value_targets = zip(*sample)
                 
@@ -161,7 +158,6 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
                 
-
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = TicTacToe()
@@ -171,7 +167,7 @@ if __name__ == "__main__":
 
     games = 500 #mp.cpu_count()
     
-    folder = "data/"+env.__repr__()+"/"
+    folder = "data/alpha_zero"+env.__repr__()+"/"
     
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -187,7 +183,7 @@ if __name__ == "__main__":
         trainer.load_data(
             filename_model=filename_model, 
             filename_loss_values=filename_loss_values, 
-            filename_optimizer=filename_optimizer, #Funker ikke å laste inn adam fordi idk
+            filename_optimizer=filename_optimizer,
             filename_game_length=filename_game_length
             )
         
@@ -201,14 +197,14 @@ if __name__ == "__main__":
     
     def save_all_iterations(iteration):
         print("\nSaving model, optimizer, game lengths and loss values")
-        trainer.save_model(folder+f"model-{num_resBlocks}-{iteration}.pt")
-        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}-{iteration}.pk1")
-        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}-{iteration}.pt")
-        trainer.save_game_length(folder+f"game_length-{num_resBlocks}-{iteration}.pk1")
+        trainer.save_model(folder+f"model/model-{num_resBlocks}-{iteration}.pt")
+        trainer.save_loss_history(folder+f"loss/loss_values-{num_resBlocks}-{iteration}.pk1")
+        trainer.save_optimizer(folder+f"optimizer/optimizer-{num_resBlocks}-{iteration}.pt")
+        trainer.save_game_length(folder+f"optimizer/game_length-{num_resBlocks}-{iteration}.pk1")
         print("Saved!")
 
     training_iterations = 0
-    while training_iterations < 3:
+    while True:
         print("Training iteration: ", training_iterations)
         try:
             trainer.train(num_games=games)
@@ -218,15 +214,5 @@ if __name__ == "__main__":
         save_all()
         training_iterations += 1
         
-        print("Loss values:")
-        
-        # avg loss of last 10 elements
-        print("avg loss of last 10 elements")
-        print("policy loss: ", sum(trainer.policy_loss_history[-10:])/10)
-        print("value loss: ", sum(trainer.value_loss_history[-10:])/10)
-        
-        if training_iterations % 20 == 0:
+        if training_iterations % 5 == 0:
             save_all_iterations(training_iterations)
-        
-        if training_iterations % 30:
-            memory = []

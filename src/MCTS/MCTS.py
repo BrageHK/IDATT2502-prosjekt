@@ -7,6 +7,7 @@ from Node.Node_normalized import NodeNormalized
 from Node.Node_NN import NodeNN
 from Node.NodeType import NodeType
 from Node.Node_threshold import NodeThreshold
+from NeuralNetThreshold import NeuralNetThreshold
 
 class MCTS:
     def __init__(self, env, num_iterations, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None, turn_time=None):
@@ -24,7 +25,7 @@ class MCTS:
         elif self.NODE_TYPE == NodeType.NODE_NN:
             return NodeNN(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_THRESHOLD:
-            return NodeThreshold(self.env, state)
+            return NodeThreshold(env=self.env, state=state, model=self.model)
         else:
             raise Exception("Invalid node type")
         
@@ -69,7 +70,7 @@ class MCTS:
 
         # Backpropagate with simulation result
         node.backpropagate(result)
-    
+
     @torch.no_grad()
     def mcts(self, root):
         # Select

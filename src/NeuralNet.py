@@ -19,7 +19,7 @@ class ResBlock(nn.Module):
         x += residual
         x = F.relu(x)
         return x
-  
+
 class AlphaPredictorNerualNet(nn.Module):
     def __init__(self, num_resBlocks, device, env, hidden_dim=100, hidden_dim_policy=32):
         super(AlphaPredictorNerualNet, self).__init__()

@@ -3,7 +3,7 @@ import torch
 from  NeuralNetThreshold import NeuralNetThreshold
 
 class NodeThreshold:
-    def __init__(self, env, state, parent=None, action_taken=None, model=NeuralNetThreshold()):
+    def __init__(self, env, state, model, parent=None, action_taken=None):
         if not env.check_state_format(state):
             print("ERROR: In state format Node constructor")
         
@@ -57,7 +57,7 @@ class NodeThreshold:
                 child_state, reward, done = self.env.step(child_state, action, 1)
                 child_state = child_state = self.env.change_perspective(child_state, player=-1)
                 
-                child = NodeThreshold(self.env, child_state, self, action)
+                child = NodeThreshold(env=self.env, state=child_state, parent=self, action_taken=action, model=self.model)
                 self.children.append(child)
     
     def random_action(self, env, state):
@@ -84,7 +84,8 @@ class NodeThreshold:
         rollout_player = 1
         
         while not done:
-            encoded_rollout_state = torch.tensor(self.env.get_encoded_state(rollout_state)).unsqueeze(0)
+            
+            encoded_rollout_state = torch.tensor(self.env.get_encoded_state(rollout_state), device=self.model.device).unsqueeze(0)
             values = self.model.forward(encoded_rollout_state) # ai predicts win, draw or loss in this position
             for i in range(len(values)): # if value is over treshold, no point in continuing simulating
                 if values[0][i] > self.threshold:

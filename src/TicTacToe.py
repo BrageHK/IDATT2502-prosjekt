@@ -15,6 +15,14 @@ class TicTacToe:
     def get_legal_moves_bool_array(self, state):
         return (state.reshape(-1) == 0).astype(np.uint8)
     
+    def get_legal_moves(self, state):
+        legal_moves = []
+        for row in range(self.ROW_COUNT):
+            for column in range(self.COLUMN_COUNT):
+                if state[row, column] == 0:
+                    legal_moves.append(row * self.COLUMN_COUNT + column)
+        return legal_moves
+    
     def check_win(self, state, action):
         if action == None:
             return False
