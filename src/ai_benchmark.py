@@ -9,12 +9,9 @@ import numpy as np
 import random
 import torch
 
-
+import torch
 import torch.multiprocessing as mp
 mp.set_start_method('spawn', force=True)
-
-
-
 
 from plyer import notification
 
@@ -192,17 +189,33 @@ class Randomf():
         return random.choice(self.env.get_legal_moves(state))
 
 
+def get_model(path):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = AlphaPredictorNerualNet(num_resBlocks=9, env=ConnectFour(), device=device)
+    model.load_state_dict(torch.load(path, map_location=device))
+    return model
+
 if __name__ == "__main__":
     env = ConnectFour()
-    model=AlphaPredictorNerualNet(9)
-    model.load_state_dict(torch.load("data/test/model.pt"))
+    model100 = get_model("data/eilor/model100.pt")
+    model364 = get_model("data/eilor/model364.pt")
     mcts_versions = {
-    "single ": MCTS(env, NODE_TYPE=NodeType.NODE, num_iterations= 10),
-    "nn": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 10),
-    "nn2": MCTS(env=ConnectFour(), NODE_TYPE=NodeType.NODE_NN, model=model, num_iterations= 10),
+    # "genious normalized": MCTS(env, num_iterations=10_000, NODE_TYPE=NodeType.NODE_NORMALIZED), # "genious
+    # "genious ": MCTS(env, num_iterations=10_000, NODE_TYPE=NodeType.NODE), # "genious
+    # "Basic MCTS ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE),
+    # "Basic normalized ": MCTS(env, num_iterations=5_000, NODE_TYPE=NodeType.NODE_NORMALIZED),
+    #"dumbass": MCTS(n_simulations=10_000),
+    #"smart" :MCTS(env=ConnectFour() ,num_iterations= 20000),
+
+    #"random" :Randomf(env),
+    #"dumb" :MCTS(n_simulations=10),
+    
+    # Add other versions here
+    "100": MCTS(env, 600, NodeType.NODE_NN, model100),
+    "364": MCTS(env, 600, NodeType.NODE_NN, model364)
     }
 
-    results = benchmark_mcts(mcts_versions, env, num_games=20)
+    results = benchmark_mcts(mcts_versions, env, num_games=mp.cpu_count())
     
     # Prepare data for writing to JSON
     data_to_write = {

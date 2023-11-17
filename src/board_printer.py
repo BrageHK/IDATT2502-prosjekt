@@ -5,13 +5,13 @@ class BoardPrinter:
     def __init__():
         pass
     
-    def print_board(board):
+    def print_board(board, env):
         player_1_matrix = np.flip(np.array(board[0]))
         player_2_matrix = np.flip(np.array(board[2]))
         availilable_moves = np.flip(np.array(board[1]))
         
-        for i in range(6):
-            for j in range(7):
+        for i in range(env.ROW_COUNT):
+            for j in range(env.COLUMN_COUNT):
                 if player_1_matrix[i][j] == 1:
                     print("X", end=" ")
                 elif player_2_matrix[i][j] == 1:

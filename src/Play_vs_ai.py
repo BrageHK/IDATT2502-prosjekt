@@ -36,7 +36,7 @@ class ConnectFourTerminal:
         self.stdscr.addstr(0, 0, "\nCurrent Board:")
         self.stdscr.addstr(1, 0, "---------------")
         row_num = 2
-        for row in reversed(self.state):
+        for row in self.state:
             self.stdscr.addstr(row_num, 0, "|")
             for cell in row:
                 if cell == 1:
@@ -130,9 +130,10 @@ class ConnectFourTerminal:
 
 
 if __name__ == "__main__":
-    #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)
-    model=AlphaPredictorNerualNet(9)
-    model.load_state_dict(torch.load("data/test2/model.pt"))
-    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=600, NODE_TYPE=NodeType.NODE_NN, model=model)
+    #opponent_algorithm = MCTS(NODE_TYPE=NodeType.NODE_DOUBLE, num_simulations=50_000)@
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model=AlphaPredictorNerualNet(9, device, ConnectFour())
+    model.load_state_dict(torch.load("data/eilor/model3.pt", map_location=device))
+    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE_THRESHOLD_LIGHTWEIGHT, turn_time=1, model=model)
 
     curses.wrapper(lambda stdscr: ConnectFourTerminal.initialize_terminal(stdscr, opponent_algorithm))

@@ -1,9 +1,7 @@
 import numpy as np
-from NeuralNet import AlphaPredictorNerualNet
-import torch
 
 class NodeNN:
-    def __init__(self, env, state, parent=None, action_taken=None, priority=0, model=None, device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
+    def __init__(self, env, state, parent=None, action_taken=None, priority=0):
         if not env.check_state_format(state):
             print("ERROR: In state format Node constructor")
         
@@ -14,16 +12,14 @@ class NodeNN:
         self.reward = 0
         self.visits = 0
         self.state = state
-        self.nn_model = model
         self.priority = priority
-        self.device = device
         
         self.c = 4  # Exploration parameter
         
     def is_fully_expanded(self):
         return len(self.children) > 0
     
-    def calculate_PUCT(self, child): 
+    def calculate_PUCT(self, child):
         # Quality-value
         q_value = 0
         if child.visits != 0:
@@ -45,24 +41,6 @@ class NodeNN:
                     best_child = child
             node = best_child
         return node
-    
-    @torch.no_grad()
-    def get_neural_network_predictions(self):
-        tensor_state = torch.tensor(self.env.get_encoded_state(self.state), device=self.device).unsqueeze(0)
-        policy, value = self.nn_model.forward(tensor_state)
-        
-        # print("Policy before:\n ", policy)
-        policy = torch.softmax(policy, axis = 1).squeeze(0).detach().cpu().numpy()
-        policy *= self.env.get_legal_moves_bool_array(self.state)
-        sum = np.sum(policy)
-        if sum == 0:
-            print("ERROR: sum of policy is 0")
-        policy /= sum
-        
-        value = value.item()
-        # print("policy after\n", policy)
-    
-        return policy, value
         
     def expand(self, policy):
         if self.visits > 0:
@@ -72,7 +50,7 @@ class NodeNN:
                     child_state, reward, done = self.env.step(child_state, action, 1)
                     child_state = child_state = self.env.change_perspective(child_state, player=-1)
                     
-                    child = NodeNN(self.env, child_state, self, action, priority=probability, model=self.nn_model, device=self.device)
+                    child = NodeNN(self.env, child_state, self, action, priority=probability)
                     self.children.append(child)
             
     def backpropagate(self, reward):
