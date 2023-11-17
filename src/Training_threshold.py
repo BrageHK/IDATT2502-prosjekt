@@ -100,7 +100,7 @@ class TrainerThreshold:
         except FileNotFoundError:
             print("No loss values found from file: ", filename_optimizer)
         try:
-            self.model.value_loss_history = self.load_loss_history(filename_loss_values)
+            self.value_loss_history = self.load_loss_history(filename_loss_values)
         except FileNotFoundError:
             print("No loss values found from file: ", filename_loss_values)
         try:

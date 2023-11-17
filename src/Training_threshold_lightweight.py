@@ -1,17 +1,25 @@
-import torch.multiprocessing as mp
-import pickle
-import numpy as np
-import torch
-import torch.nn.functional as F
-import os
-import random
-
 from MCTS.MCTS import MCTS
 from Connect_four_env import ConnectFour
 from TicTacToe import TicTacToe
-from NeuralNet import AlphaPredictorNerualNet
+import numpy as np
+import torch
+import torch.nn.functional as F
+import pickle
+import os
+import torch.multiprocessing as mp
+import time
+import random
+
+from NeuralNetThreshold_lightweight import NeuralNetThresholdLightweight
 from Node.NodeType import NodeType
-from tqdm import tqdm
+
+def reward_tuple(reward):
+        if reward == 1:
+            return (1, 0, 0) # win
+        elif reward == 0:
+            return (0, 1, 0) # draw 
+        else:
+            return (0, 0, 1) # loss
 
 @torch.no_grad()
 def play_game(env, mcts, match_id):
@@ -21,41 +29,40 @@ def play_game(env, mcts, match_id):
         player = 1
         done = False
         state = env.get_initial_state()
-        
+        turn = 0
+
         while True:
             neutral_state = env.change_perspective(state, player)
-            mcts_prob, action = mcts.search(neutral_state, training=True) 
-
-            memory.append((neutral_state, mcts_prob, player))
-
-            mcts_prob = np.power(mcts_prob, 1/1.25)
-            mcts_prob = mcts_prob / np.sum(mcts_prob)
-            action = np.random.choice(env.action_space, p=mcts_prob)
+            action = mcts.search(neutral_state)
+            
+            memory.append((neutral_state, player))
             
             state, reward, done = env.step(state, action=action, player=player)
+            
             if done:
                 return_memory = []
-                for historical_state, historical_mcts_prob, historical_player in memory:
+                for historical_state, historical_player in memory:
                     historical_outcome = reward if historical_player == player else env.get_opponent_value(reward)
-                    return_memory.append((env.get_encoded_state(historical_state), historical_mcts_prob, historical_outcome))
+                    historical_outcome = reward_tuple(historical_outcome)
+                    historical_state = np.array(historical_state)
+                    return_memory.append((historical_state.flatten(), historical_outcome))
                 return return_memory
             
+            turn += 1
             player = env.get_opponent(player)
 
-class Trainer:
-    def __init__(self, model, env=ConnectFour(), num_iterations=600):
-        self.policy_loss_history = []
+class TrainerThresholdLightweight:
+    def __init__(self, model, env=ConnectFour(), num_iterations=5_000):
+        self.model = model
+        self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_THRESHOLD_LIGHTWEIGHT, model=model)
+        self.env = env
         self.value_loss_history = []
         self.game_length_history = []
-        self.model = model
-        self.mcts = MCTS(env, num_iterations, NODE_TYPE=NodeType.NODE_NN, model=model)
-        self.env = env
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001, weight_decay=1e-4)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
 
         print("Starting training using: ", "cuda" if torch.cuda.is_available() else "cpu")
         print("Cores used for training: ", mp.cpu_count())
-        
-        
+    
     def save_game_length(self, filename):
         with open(filename, "wb") as file:
             pickle.dump(self.game_length_history, file)
@@ -63,13 +70,13 @@ class Trainer:
     def save_model(self, filename):
         torch.save(self.model.state_dict(), filename)
         
-    def save_optimizer(self, filename):
-        torch.save(self.optimizer.state_dict(), filename)
-        
     def save_loss_history(self, filename):
         with open(filename, "wb") as file:
-            pickle.dump((self.policy_loss_history, self.value_loss_history), file)
-        
+            pickle.dump(self.value_loss_history, file)
+    
+    def save_optimizer(self, filename):
+        torch.save(self.optimizer.state_dict(), filename)
+         
     def load_model(self, path):
         self.model.load_state_dict(torch.load(path))
     
@@ -83,7 +90,7 @@ class Trainer:
     def load_game_length(self, filename):
         with open(filename, "rb") as file:
             return pickle.load(file)
-    
+        
     def load_data(self, filename_model, filename_loss_values, filename_optimizer, filename_game_length):
         try:
             self.load_model(filename_model)
@@ -94,7 +101,7 @@ class Trainer:
         except FileNotFoundError:
             print("No loss values found from file: ", filename_optimizer)
         try:
-            self.policy_loss_history, self.value_loss_history = self.load_loss_history(filename_loss_values)
+            self.value_loss_history = self.load_loss_history(filename_loss_values)
         except FileNotFoundError:
             print("No loss values found from file: ", filename_loss_values)
         try:
@@ -109,74 +116,81 @@ class Trainer:
         for _ in range(num_games):
             args_list.append((self.env, self.mcts, match_id))
             match_id += 1
-
-        print("Starting self play")
-        mp.set_start_method('spawn', force=True)
-        with mp.Pool(mp.cpu_count()) as pool:
-            result_list = list(tqdm(pool.starmap(play_game, args_list), total=len(args_list)))
         
+        mp.set_start_method('spawn', force=True)
+        
+        with mp.Pool(mp.cpu_count()) as pool:
+            result_list = pool.starmap(play_game, args_list)
         for i in range(len(result_list)):
-            memory += result_list[i]
-            self.game_length_history.append(len(result_list[i]))
-            
+            memory.extend(result_list[i])
+        
         print("Training model")
         self.model.train() # Sets training mode
-        
-        self.optimize(memory)
+        self.optimize(memory=memory)
         
         return memory
     
-    def loss(self, policy_logits, value_logits, policy_target, value_target): #
-        policy_loss = F.cross_entropy(policy_logits, policy_target)
+    def loss(self, value_logits, value_target): #
         value_loss = F.mse_loss(value_logits, value_target)
         self.value_loss_history.append(value_loss.item())
-        self.policy_loss_history.append(policy_loss.item())
-        return policy_loss + value_loss
+        return value_loss
     
     def optimize(self, memory, epoch=4, batch_size=128):
         for i in range(epoch):
             random.shuffle(memory)
-
+            
             print("Starting epoch: ", i+1)
             for batch_index in range(0, len(memory), batch_size):
                 sample = memory[batch_index:min(len(memory) - 1, batch_index + batch_size)]
-                states, policy_targets, value_targets = zip(*sample)
+                states, value_targets = zip(*sample)
                 
                 states = np.array(states)
-                policy_targets = np.array(policy_targets)
                 value_targets = np.array([np.array(item).reshape(-1, 1) for item in value_targets])
             
                 states = torch.tensor(states, dtype=torch.float32, device=self.model.device)
-                policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=self.model.device)
                 value_targets = torch.tensor(value_targets, dtype=torch.float32, device=self.model.device)
                 
-                policy_output, value_output = self.model(states)
+                value_output = self.model(states)
                 
-                loss = self.loss(policy_output, value_output, policy_targets, value_targets.squeeze(-1))
+                loss = self.loss(value_output, value_targets.squeeze(-1))
                 
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                
-if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    env = TicTacToe()
-    num_resBlocks = 4
-    model = AlphaPredictorNerualNet(num_resBlocks=num_resBlocks, device=device, env=env)
-    trainer = Trainer(env = env, model=model, num_iterations=60)
+    
+    def save_games(self, memory, filename):
+        with open(filename, "wb") as file:
+            pickle.dump(memory, file)
+            
+    def load_games(self, filename):
+        with open(filename, "rb") as file:
+            return pickle.load(file)
 
-    games = 500 #mp.cpu_count()
-    
-    folder = "data/alpha_zero"+env.__repr__()+"/"
-    
+def create_folder(folder):
     if not os.path.exists(folder):
         os.makedirs(folder)
         print(f"Folder created: {folder}")
     
-    filename_model = folder+f"model-{num_resBlocks}.pt"
-    filename_optimizer = folder+f"optimizer-{num_resBlocks}.pt"
-    filename_loss_values = folder+f"loss_values-{num_resBlocks}.pk1"
-    filename_game_length = folder+f"game_length-{num_resBlocks}.pk1"
+
+if __name__ == "__main__":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    env = TicTacToe()
+    model = NeuralNetThresholdLightweight(env=env, device=device)
+    trainer = TrainerThresholdLightweight(env = env, model=model, num_iterations=60)
+
+    games = mp.cpu_count()
+    
+    folder = "data/threshold"+env.__repr__()+"/"
+    
+    folders = ["","model", "loss", "optimizer", "game_length"]
+    
+    for path in folders:
+        create_folder(folder+path)
+    
+    filename_model = folder+f"model.pt"
+    filename_optimizer = folder+f"optimizer.pt"
+    filename_loss_values = folder+f"loss_values.pk1"
+    filename_game_length = folder+f"game_length.pk1"
         
     load_all = False
     if load_all:
@@ -189,18 +203,18 @@ if __name__ == "__main__":
         
     def save_all():
         print("\nSaving model, optimizer and loss values")
-        trainer.save_model(folder+f"model-{num_resBlocks}.pt")
-        trainer.save_loss_history(folder+f"loss_values-{num_resBlocks}.pk1")
-        trainer.save_optimizer(folder+f"optimizer-{num_resBlocks}.pt")
-        trainer.save_game_length(folder+f"game_length-{num_resBlocks}.pk1")
+        trainer.save_model(folder+f"model.pt")
+        trainer.save_loss_history(folder+f"loss_values.pk1")
+        trainer.save_optimizer(folder+f"optimizer.pt")
+        trainer.save_game_length(folder+f"game_length.pk1")
         print("Saved!")
     
     def save_all_iterations(iteration):
         print("\nSaving model, optimizer, game lengths and loss values")
-        trainer.save_model(folder+f"model/model-{num_resBlocks}-{iteration}.pt")
-        trainer.save_loss_history(folder+f"loss/loss_values-{num_resBlocks}-{iteration}.pk1")
-        trainer.save_optimizer(folder+f"optimizer/optimizer-{num_resBlocks}-{iteration}.pt")
-        trainer.save_game_length(folder+f"optimizer/game_length-{num_resBlocks}-{iteration}.pk1")
+        trainer.save_model(folder+f"model/model-{iteration}.pt")
+        trainer.save_loss_history(folder+f"loss/loss_values-{iteration}.pk1")
+        trainer.save_optimizer(folder+f"optimizer/optimizer-{iteration}.pt")
+        trainer.save_game_length(folder+f"game_length/game_length-{iteration}.pk1")
         print("Saved!")
 
     training_iterations = 0
