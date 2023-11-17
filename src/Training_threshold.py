@@ -175,7 +175,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     env = TicTacToe()
     model = NeuralNetThreshold(env=env, device=device)
-    trainer = TrainerThreshold(env = env, model=model, num_iterations=60)
+    trainer = TrainerThreshold(env = env, model=model, num_iterations=10_000)
 
     games = mp.cpu_count()*8
     

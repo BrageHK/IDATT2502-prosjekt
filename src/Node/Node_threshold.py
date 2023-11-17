@@ -84,14 +84,12 @@ class NodeThreshold:
         rollout_player = 1
         
         while not done:
-            
             encoded_rollout_state = torch.tensor(self.env.get_encoded_state(rollout_state), device=self.model.device).unsqueeze(0)
             values = self.model.forward(encoded_rollout_state) # ai predicts win, draw or loss in this position
             for i in range(len(values)): # if value is over treshold, no point in continuing simulating
                 if values[0][i] > self.threshold:
                     reward = self.get_reward_from_value(i)
                     break
-                    
             rollout_action = self.random_action(self.env, rollout_state)
             rollout_state, reward, done = self.env.step(rollout_state, rollout_action, rollout_player)
             rollout_player = self.env.get_opponent(rollout_player)
