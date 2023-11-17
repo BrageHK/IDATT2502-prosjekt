@@ -134,6 +134,6 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model=AlphaPredictorNerualNet(9, device, ConnectFour())
     model.load_state_dict(torch.load("data/eilor/model3.pt", map_location=device))
-    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE_NN, turn_time=1, model=model)
+    opponent_algorithm = MCTS(env=ConnectFour(), num_iterations=3_000, NODE_TYPE=NodeType.NODE_THRESHOLD_LIGHTWEIGHT, turn_time=1, model=model)
 
     curses.wrapper(lambda stdscr: ConnectFourTerminal.initialize_terminal(stdscr, opponent_algorithm))
