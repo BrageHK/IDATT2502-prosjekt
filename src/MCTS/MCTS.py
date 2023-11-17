@@ -7,7 +7,7 @@ from Node.Node_normalized import NodeNormalized
 from Node.Node_NN import NodeNN
 from Node.NodeType import NodeType
 from Node.Node_threshold import NodeThreshold
-from NeuralNetThreshold import NeuralNetThreshold
+from Node.Node_threshold_lightweight import NodeThresholdLightweight
 
 class MCTS:
     def __init__(self, env, num_iterations, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None, turn_time=None):
@@ -26,6 +26,8 @@ class MCTS:
             return NodeNN(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_THRESHOLD:
             return NodeThreshold(env=self.env, state=state, model=self.model)
+        elif self.NODE_TYPE == NodeType.NODE_THRESHOLD_LIGHTWEIGHT:
+            return NodeThresholdLightweight(env=self.env, state=state, model=self.model)
         else:
             raise Exception("Invalid node type")
         
@@ -92,7 +94,7 @@ class MCTS:
     def search(self, state, training=False):
         root = self.create_node(state)
         
-        mcts_method = self.mcts if self.NODE_TYPE in [NodeType.NODE, NodeType.NODE_NORMALIZED, NodeType.NODE_THRESHOLD] else self.mcts_AlphaZero if self.NODE_TYPE == NodeType.NODE_NN else None
+        mcts_method = self.mcts if self.NODE_TYPE in [NodeType.NODE, NodeType.NODE_NORMALIZED, NodeType.NODE_THRESHOLD, NodeType.NODE_THRESHOLD_LIGHTWEIGHT] else self.mcts_AlphaZero if self.NODE_TYPE == NodeType.NODE_NN else None
         if mcts_method is None:
             raise Exception("Invalid node type")
 

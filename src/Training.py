@@ -94,7 +94,7 @@ class Trainer:
         except FileNotFoundError:
             print("No loss values found from file: ", filename_optimizer)
         try:
-            self.model.policy_loss_history, self.model.value_loss_history = self.load_loss_history(filename_loss_values)
+            self.policy_loss_history, self.value_loss_history = self.load_loss_history(filename_loss_values)
         except FileNotFoundError:
             print("No loss values found from file: ", filename_loss_values)
         try:
