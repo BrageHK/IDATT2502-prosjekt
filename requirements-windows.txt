@@ -1,0 +1,6 @@
+plyer
+numpy
+torch
+torchvision
+tqdm
+windows-curses
