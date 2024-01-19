@@ -5,13 +5,18 @@ import torch
 import torch.nn.functional as F
 import os
 import random
+import copy
 
-from MCTS.MCTS import MCTS
 from Connect_four_env import ConnectFour
 from TicTacToe import TicTacToe
+import gym
+import gym_chess
+
+from MCTS.MCTS import MCTS
 from NeuralNet import AlphaPredictorNerualNet
 from NeuralNetThreshold import NeuralNetThreshold
 from NeuralNetThreshold_lightweight import NeuralNetThresholdLightweight
+from NeuralNetChess import AlphaPredictorNerualNetChess
 from Node.NodeType import NodeType
 from tqdm import tqdm
 
@@ -33,9 +38,9 @@ def play_game_alpha_zero(env, mcts, match_id):
 
             memory.append((neutral_state, mcts_prob, player))
 
-            mcts_prob = np.power(mcts_prob, 1/1.25)
-            mcts_prob = mcts_prob / np.sum(mcts_prob)
-            action = np.random.choice(env.action_space, p=mcts_prob)
+            mcts_prob = np.power(mcts_prob, 1/1.25) # Temperature
+            mcts_prob = mcts_prob / np.sum(mcts_prob) # Normalize probabilities
+            action = np.random.choice(env.action_space, p=mcts_prob) # Choose action according to probability distribution
             
             state, reward, done = env.step(state, action=action, player=player)
             if done:
@@ -46,6 +51,35 @@ def play_game_alpha_zero(env, mcts, match_id):
                 return return_memory
             
             player = env.get_opponent(player)
+            
+@torch.no_grad()
+def play_game_alpha_zero_chess(env, mcts, match_id):
+        print(f'Starting chess match {match_id}')
+
+        memory = []
+        player = 1
+        done = False
+        while True:
+            mcts_prob, action = mcts.search(copy.deepcopy(env), training=True)
+
+            memory.append((env.get_observation(), mcts_prob, player)) # First element in tuple is the neutral state
+
+            mcts_prob = np.power(mcts_prob, 1/1.25) # Temperature
+            mcts_prob = mcts_prob / np.sum(mcts_prob) # Normalize probabilities
+            action = np.random.choice(len(mcts_prob), p=mcts_prob) # Choose action according to probability distribution
+            
+            state_info = env.step(action)
+            reward = state_info[1]
+            done = state_info[2]
+            
+            if done:
+                return_memory = []
+                for historical_state, historical_mcts_prob, historical_player in memory:
+                    historical_outcome = reward if historical_player == player else -reward
+                    return_memory.append((historical_state, historical_mcts_prob, historical_outcome))
+                return return_memory
+            
+            player = -player
 
 @torch.no_grad()
 def play_game_threshold(env, mcts, match_id):
@@ -123,7 +157,9 @@ class Trainer:
         
     def get_model_from_node(self):
         if config["node_type"] == NodeType.NODE_NN:
-            return AlphaPredictorNerualNet(num_resBlocks=config["num_res_blocks"], env=config["env"], device=self.device)
+            return AlphaPredictorNerualNet(num_resBlocks=config["num_res_blocks"], env=config["env"], device=self.device) 
+        elif config["node_type"] == NodeType.NODE_NN_CHESS:
+            return AlphaPredictorNerualNetChess(num_resBlocks=config["num_res_blocks"], device=self.device)
         elif config["node_type"] == NodeType.NODE_THRESHOLD:
             return NeuralNetThreshold(env=config["env"], device=self.device)
         elif config["node_type"] == NodeType.NODE_THRESHOLD_LIGHTWEIGHT:
@@ -184,10 +220,13 @@ class Trainer:
         args_list = []
         memory = []
         for _ in range(self.config["num_games"]):
-            args_list.append((self.config["env"], self.mcts, match_id))
+            args_list.append((copy.deepcopy(self.config["env"]), self.mcts, match_id))
             match_id += 1
             
-        game_func = play_game_threshold_lightweight if self.config["node_type"] == NodeType.NODE_THRESHOLD_LIGHTWEIGHT else play_game_threshold if self.config["node_type"] == NodeType.NODE_THRESHOLD else play_game_alpha_zero
+        if self.config["node_type"] == NodeType.NODE_NN_CHESS:
+            game_func = play_game_alpha_zero_chess
+        else:
+            game_func = play_game_threshold_lightweight if self.config["node_type"] == NodeType.NODE_THRESHOLD_LIGHTWEIGHT else play_game_threshold if self.config["node_type"] == NodeType.NODE_THRESHOLD else play_game_alpha_zero
 
         print("Starting self play")
         mp.set_start_method('spawn', force=True)
@@ -226,7 +265,8 @@ class Trainer:
                 else:
                     states, policy_targets, value_targets = zip(*sample)
                 
-                states = np.array(states)
+                states = np.array(states).transpose(0, 3, 1, 2)
+
                 if not self.is_threshold():
                     policy_targets = np.array(policy_targets)
                 value_targets = np.array([np.array(item).reshape(-1, 1) for item in value_targets])
@@ -236,6 +276,7 @@ class Trainer:
                     policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=self.model.device)
                 value_targets = torch.tensor(value_targets, dtype=torch.float32, device=self.model.device)
                 
+
                 if self.is_threshold():
                     value_output = self.model(states)
                 else:
@@ -282,18 +323,19 @@ if __name__ == "__main__":
     # Here are the arguments for the current training session.
     # Set them to the correct value for your training.
     config = {
-        "num_iterations": 7,
-        "num_games": 8,
+        "num_iterations": 10, # Bare for testing, set til 600 etterpå
+        "num_games": 1, # Bare for testing, sett til 400 etterpå
         "num_epochs": 4,
         "batch_size": 128,
-        "node_type": NodeType.NODE_NN,
-        "env": TicTacToe(),       # ConnectFour(), TicTacToe()
+        "node_type": NodeType.NODE_NN_CHESS,
+        "env": gym.make('ChessAlphaZero-v0'), # ConnectFour(), TicTacToe() or gym.make('Chess-v0')
         "save_folder": "data",
         "load_folder": "data",
         "load_data": True,
-        "num_res_blocks": 9, # use 9 for connect4 and 4 for tictactoe. Not relevant for threshold
+        "num_res_blocks": 20, # Use 9 for connect4 and 4 for tictactoe. Use more for chess. Not relevant for threshold
         "starting_iteration": None, # Set this to None if you want the newest one
         }
+    config["env"].reset
     
     trainer = Trainer(config)
     

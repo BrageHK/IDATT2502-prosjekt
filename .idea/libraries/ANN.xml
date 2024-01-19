@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="ANN">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Model/ANN/ANN.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
