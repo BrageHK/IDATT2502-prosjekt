@@ -12,14 +12,22 @@ from Node.Node_threshold import NodeThreshold
 from Node.Node_threshold_lightweight import NodeThresholdLightweight
 from Node.Node_NN_chess import NodeNNChess
 
+
 class MCTS:
-    def __init__(self, env, num_iterations=69, NODE_TYPE=NodeType.NODE_NORMALIZED, model=None, turn_time=None):
+    def __init__(
+        self,
+        env,
+        num_iterations=69,
+        NODE_TYPE=NodeType.NODE_NORMALIZED,
+        model=None,
+        turn_time=None,
+    ):
         self.env = env
         self.num_iterations = num_iterations
         self.NODE_TYPE = NODE_TYPE
         self.model = model
         self.turn_time = turn_time
-        
+
     def create_node(self, state):
         if self.NODE_TYPE == NodeType.NODE:
             return Node(self.env, state)
@@ -28,7 +36,7 @@ class MCTS:
         elif self.NODE_TYPE == NodeType.NODE_NN:
             return NodeNN(self.env, state)
         elif self.NODE_TYPE == NodeType.NODE_NN_CHESS:
-            return NodeNNChess(self.env)
+            return NodeNNChess(state)
         elif self.NODE_TYPE == NodeType.NODE_THRESHOLD:
             return NodeThreshold(env=self.env, state=state, model=self.model)
         elif self.NODE_TYPE == NodeType.NODE_THRESHOLD_LIGHTWEIGHT:
@@ -37,52 +45,52 @@ class MCTS:
             raise Exception("Invalid node type")
 
     @torch.no_grad()
-    def get_neural_network_predictions(self, state):
+    def get_neural_network_predictions(self, state, env=None):
         tensor_state = torch.tensor(state, device=self.model.device, dtype=torch.float)
         tensor_state = tensor_state.permute(2, 0, 1).unsqueeze(0)
         policy, value = self.model.forward(tensor_state)
-        
-        policy = torch.softmax(policy, axis = 1).squeeze(0).detach().cpu().numpy()
-        legal_moves = self.env.legal_actions
+
+        policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().numpy()
+        legal_moves = self.env.legal_actions if env == None else env.legal_actions
         mask = np.zeros_like(policy)
         mask[legal_moves] = 1
-        
+
         policy *= mask
-        
+
         sum = np.sum(policy)
         policy /= sum
         return policy, value.item()
-        
+
     @torch.no_grad()
     def mcts_AlphaZero(self, root):
         # Select
         node = root.select()
-        
+
         result, done = self.env.check_game_over(node.state, node.action_taken)
         result = self.env.get_opponent_value(result)
-        
+
         if not done:
             # Predicts probabilities for each move and winner probability
             policy, result = self.get_neural_network_predictions(node.state)
-                        
+
             # Expand node
             node.expand(policy)
 
         # Backpropagate with simulation result
         node.backpropagate(result)
-        
+
     @torch.no_grad()
     def mcts_AlphaZero_chess(self, root):
         # Select
         node = root.select()
-        
-        done = node.env.done()
-        result = node.env.reward() # TODO: does this work
-        if done:
-            print("done result: ", result)
+        done = node.env.done
+        result = node.env.reward  # TODO: does this work
+
         if not done:
             # Predicts probabilities for each move and winner probability
-            policy, result = self.get_neural_network_predictions(node.env.get_observation())
+            policy, result = self.get_neural_network_predictions(
+                node.env.get_observation(), node.env
+            )
 
             # Expand node
             node.expand(policy)
@@ -94,28 +102,39 @@ class MCTS:
     def mcts(self, root):
         # Select
         node = root.select()
-        
+
         result, done = self.env.check_game_over(node.state, node.action_taken)
         result = self.env.get_opponent_value(result)
-        
+
         if not done:
             # Expand node
             node.expand()
             # Simulate root node
             result, _ = node.simulate()
-                
+
         # Backpropagate with simulation result
         node.backpropagate(result)
 
     @torch.no_grad()
     def search(self, state, training=False):
-        state.reset()
-        print("root state: ", state)
         root = self.create_node(state)
-        
-        mcts_method = self.mcts if self.NODE_TYPE in [NodeType.NODE, NodeType.NODE_NORMALIZED, NodeType.NODE_THRESHOLD, NodeType.NODE_THRESHOLD_LIGHTWEIGHT] else self.mcts_AlphaZero if self.NODE_TYPE == NodeType.NODE_NN else self.mcts_AlphaZero_chess
+
+        mcts_method = (
+            self.mcts
+            if self.NODE_TYPE
+            in [
+                NodeType.NODE,
+                NodeType.NODE_NORMALIZED,
+                NodeType.NODE_THRESHOLD,
+                NodeType.NODE_THRESHOLD_LIGHTWEIGHT,
+            ]
+            else self.mcts_AlphaZero
+            if self.NODE_TYPE == NodeType.NODE_NN
+            else self.mcts_AlphaZero_chess
+        )
         if mcts_method == self.mcts_AlphaZero_chess:
             self.env = state
+
         if mcts_method is None:
             raise Exception("Invalid node type")
 
@@ -130,12 +149,9 @@ class MCTS:
         visits = np.zeros(self.env.action_space.n)
         for child in root.children:
             visits[child.action_taken] = child.visits
-        #print("Visits: ", visits)
-        #print("Best action: ", best_action)
         probabilties = visits / np.sum(visits)
-        #print("Probabilties: ", probabilties)
+        # print("Probabilties: ", probabilties)
         best_action = np.argmax(visits)
-        #print("Best action: ", best_action)
         if training:
             return probabilties, best_action
         return best_action
