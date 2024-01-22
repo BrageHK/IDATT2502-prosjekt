@@ -29,7 +29,7 @@ while not done:
     # print("action: ", (action))
     # print("Done: ", done, "Action: ", action)
     done = state_info[2]
-    # print(env.render(mode='unicode'), "\n")
+    print(env.render(mode='unicode'), "\n")
     move_num += 1
     # print("Move number:", move_num)
 print("Encoded board state: ", state_info[0].shape)

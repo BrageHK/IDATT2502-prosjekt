@@ -457,8 +457,8 @@ if __name__ == "__main__":
     # Here are the arguments for the current training session.
     # Set them to the correct value for your training.
     config = {
-        "num_iterations": 200,  # Bare for testing, set til 600 etterpå
-        "num_games": 100,  # Bare for testing, sett til 400 etterpå
+        "num_iterations": 600,  # Bare for testing, set til 600 etterpå
+        "num_games": mp.cpu_count()*33,  # Bare for testing, sett til 400 etterpå
         "num_epochs": 4,
         "batch_size": 128,
         "node_type": NodeType.NODE_NN_CHESS,
@@ -467,7 +467,7 @@ if __name__ == "__main__":
         ),  # ConnectFour(), TicTacToe() or gym.make("ChessAlphaZero-v0")
         "save_folder": "data",
         "load_folder": "data",
-        "load_data": False,
+        "load_data": True,
         "num_res_blocks": 20,  # Use 9 for connect4 and 4 for tictactoe. Use more for chess. Not relevant for threshold
         "starting_iteration": None,  # Set this to None if you want the newest one
     }

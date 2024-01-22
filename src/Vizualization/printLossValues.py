@@ -3,7 +3,7 @@ from collections import deque
 import matplotlib.pyplot as plt
 import numpy as np
 
-with open("data/test/loss_values.pk1", "rb") as file:
+with open("data/NODE_NN_CHESS/<MoveEncoding<BoardEncoding<Chess<ChessAlphaZero-v0>>>>/loss_values/loss_values.pt", "rb") as file:
     policy_loss, value_loss = pickle.load(file)
     
     print("Policy loss data poins:")

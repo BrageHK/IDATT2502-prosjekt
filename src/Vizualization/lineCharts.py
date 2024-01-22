@@ -24,7 +24,7 @@ with open("data/test/loss_values.pk1", "rb") as file:
     plt.ylabel("Loss")
     plt.title("Loss values")
     plt.legend()
-    #plt.show()
-    plt.savefig(f'plots/Loss.svg', format='svg')
+    plt.show()
+    #plt.savefig(f'plots/Loss.svg', format='svg')
 
     
