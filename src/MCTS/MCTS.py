@@ -44,22 +44,29 @@ class MCTS:
         else:
             raise Exception("Invalid node type")
 
+
     @torch.no_grad()
     def get_neural_network_predictions(self, state, env=None):
         tensor_state = torch.tensor(state, device=self.model.device, dtype=torch.float)
         tensor_state = tensor_state.permute(2, 0, 1).unsqueeze(0)
         policy, value = self.model.forward(tensor_state)
 
-        policy = torch.softmax(policy, axis=1).squeeze(0).detach().cpu().numpy()
-        legal_moves = self.env.legal_actions if env == None else env.legal_actions
-        mask = np.zeros_like(policy)
+        policy = torch.softmax(policy, dim=1).squeeze(0).detach()
+
+        legal_moves = self.env.legal_actions if env is None else env.legal_actions
+        mask = torch.zeros_like(policy)
         mask[legal_moves] = 1
 
         policy *= mask
 
-        sum = np.sum(policy)
-        policy /= sum
+        sum_policy = torch.sum(policy)
+        if sum_policy > 0:
+            policy /= sum_policy
+        else:
+            policy = torch.zeros_like(policy)  # Avoid division by zero
+
         return policy, value.item()
+
 
     @torch.no_grad()
     def mcts_AlphaZero(self, root):
@@ -146,12 +153,13 @@ class MCTS:
             while time.time() - start < self.turn_time:
                 mcts_method(root)
 
-        visits = np.zeros(self.env.action_space.n)
+        visits = torch.zeros(self.env.action_space.n, device=self.model.device)
         for child in root.children:
             visits[child.action_taken] = child.visits
-        probabilties = visits / np.sum(visits)
+
         # print("Probabilties: ", probabilties)
-        best_action = np.argmax(visits)
+        best_action = torch.argmax(visits)
         if training:
+            probabilties = visits / torch.sum(visits)
             return probabilties, best_action
         return best_action

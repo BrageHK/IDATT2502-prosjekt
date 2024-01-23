@@ -1,6 +1,6 @@
 import numpy as np
 import copy
-
+import torch
 
 class NodeNNChess:
     def __init__(self, env, parent=None, action_taken=None, priority=0):
@@ -51,20 +51,21 @@ class NodeNNChess:
         # Identify legal moves (non-zero probability)
         legal_moves = policy > 0
 
-        # Generate Dirichlet noise
-        noise = np.random.dirichlet([alpha] * legal_moves.sum())
+        # Count the number of legal moves and generate Dirichlet noise on the CPU
+        num_legal_moves = legal_moves.sum().item()
+        noise = np.random.dirichlet([alpha] * num_legal_moves)
 
-        # Create a new array to hold the noisy policy
-        noisy_policy = np.zeros_like(policy)
-        noisy_policy[legal_moves] = noise  # Apply noise only to legal moves
+        # Convert the noise to a PyTorch tensor and transfer it to the same device as the policy tensor
+        noise_tensor = torch.tensor(noise, device=policy.device, dtype=policy.dtype)
 
-        # Mix the original policy with the noisy policy
-        policy[legal_moves] = (1 - 0.25) * policy[legal_moves] + 0.25 * noisy_policy[
-            legal_moves
-        ]
+        # Create a tensor to hold the noisy policy, initially a copy of the original policy
+        noisy_policy = policy.clone()
 
-        # The policy vector is already normalized since Dirichlet noise is a probability distribution
-        return policy
+        # Apply noise only to legal moves
+        noisy_policy[legal_moves] = (1 - 0.25) * noisy_policy[legal_moves] + 0.25 * noise_tensor
+
+        # Return the noisy policy
+        return noisy_policy
 
     def expand(
         self, policy, training=True

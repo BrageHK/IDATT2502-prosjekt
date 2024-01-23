@@ -6,6 +6,8 @@ import torch.nn.functional as F
 import os
 import random
 import copy
+from torch.distributions import Categorical
+
 
 from Connect_four_env import ConnectFour
 from TicTacToe import TicTacToe
@@ -81,11 +83,9 @@ def play_game_alpha_zero_chess(env, mcts, match_id):
             (env.get_observation(), mcts_prob, player)
         )  # First element in tuple is the neutral state
 
-        mcts_prob = np.power(mcts_prob, 1 / 1.25)  # Temperature
-        mcts_prob = mcts_prob / np.sum(mcts_prob)  # Normalize probabilities
-        action = np.random.choice(
-            len(mcts_prob), p=mcts_prob
-        )  # Choose action according to probability distribution
+        mcts_prob = torch.pow(mcts_prob, 1 / 1.25)  # Temperature
+        mcts_prob = mcts_prob / torch.sum(mcts_prob)  # Normalize probabilities
+        action = Categorical(mcts_prob).sample().item()
 
         state_info = env.step(action)
         reward = state_info[1]
