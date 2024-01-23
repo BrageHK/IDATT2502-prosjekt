@@ -48,24 +48,16 @@ class NodeNNChess:
         `alpha` is the parameter for the Dirichlet distribution.
         Assumes that illegal moves have a probability of 0 in the policy vector.
         """
-        # Identify legal moves (non-zero probability)
         legal_moves = policy > 0
-
-        # Count the number of legal moves and generate Dirichlet noise on the CPU
         num_legal_moves = legal_moves.sum().item()
-        noise = np.random.dirichlet([alpha] * num_legal_moves)
 
-        # Convert the noise to a PyTorch tensor and transfer it to the same device as the policy tensor
-        noise_tensor = torch.tensor(noise, device=policy.device, dtype=policy.dtype)
-
-        # Create a tensor to hold the noisy policy, initially a copy of the original policy
-        noisy_policy = policy.clone()
+        # Generate Dirichlet noise directly as a PyTorch tensor
+        noise = torch.distributions.Dirichlet(torch.full((num_legal_moves,), alpha, device=policy.device, dtype=policy.dtype)).sample()
 
         # Apply noise only to legal moves
-        noisy_policy[legal_moves] = (1 - 0.25) * noisy_policy[legal_moves] + 0.25 * noise_tensor
+        policy[legal_moves] = (1 - 0.25) * policy[legal_moves] + 0.25 * noise
 
-        # Return the noisy policy
-        return noisy_policy
+        return policy
 
     def expand(
         self, policy, training=True
@@ -74,24 +66,16 @@ class NodeNNChess:
             policy = self.add_dirichlet_noise(policy)
 
         if self.visits > 0:
-            # print("policies: ", policy)
-            # print("legal moves from here: ", self.env.legal_actions)
-            legal_actions = self.env.legal_actions
             for action, probability in enumerate(policy):
                 if probability > 0:
-                    if action in legal_actions:
-                        # print("legal move ", action)
-                        next_env = copy.deepcopy(self.env)
-                        next_env.step(action)
+                    next_env = copy.deepcopy(self.env)
+                    next_env.step(action)
 
-                        child = NodeNNChess(
-                            next_env, self, action, priority=probability
-                        )
-                        self.children.append(child)
-                    else:
-                        # Getting here whould mean logical error
-                        print("Illegal move:", action)
-                        exit()
+                    child = NodeNNChess(
+                        next_env, self, action, priority=probability
+                    )
+                    self.children.append(child)
+                    
 
     def backpropagate(self, reward):
         self.reward += reward
